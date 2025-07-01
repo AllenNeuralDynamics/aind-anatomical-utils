@@ -3,8 +3,8 @@
 [![License](https://img.shields.io/badge/license-MIT-brightgreen)](LICENSE)
 ![Code Style](https://img.shields.io/badge/code%20style-black-black)
 [![semantic-release: angular](https://img.shields.io/badge/semantic--release-angular-e10079?logo=semantic-release)](https://github.com/semantic-release/semantic-release)
-![Interrogate](https://img.shields.io/badge/interrogate-72.2%25-red)
-![Coverage](https://img.shields.io/badge/coverage-88%25-yellow?logo=codecov)
+![Interrogate](https://img.shields.io/badge/interrogate-83.8%25-yellow)
+![Coverage](https://img.shields.io/badge/coverage-79%25-red?logo=codecov)
 ![Python](https://img.shields.io/badge/python->=3.9-blue?logo=python)
 
 
