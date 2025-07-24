@@ -3,7 +3,7 @@
 import json
 import logging
 import re
-from typing import Tuple
+from typing import Optional, Tuple, Union
 
 import numpy as np
 import SimpleITK as sitk
@@ -18,7 +18,9 @@ from aind_anatomical_utils.utils import find_indices_equal_to
 logger = logging.getLogger(__name__)
 
 
-def extract_control_points(json_data: dict) -> Tuple[np.ndarray, list, str]:
+def extract_control_points(
+    json_data: dict,
+) -> Tuple[np.ndarray, list[str], str]:
     """
     Extract points and names from slicer json dict
 
@@ -46,7 +48,7 @@ def extract_control_points(json_data: dict) -> Tuple[np.ndarray, list, str]:
     return np.array(pos), labels, coord_str
 
 
-def find_seg_nrrd_header_segment_info(header):
+def find_seg_nrrd_header_segment_info(header: dict) -> dict:
     """
     parse keys of slicer created dict to find segment names and values
 
@@ -71,7 +73,7 @@ def find_seg_nrrd_header_segment_info(header):
     return segment_info
 
 
-def get_segmented_labels(label_vol):
+def get_segmented_labels(label_vol: sitk.Image) -> dict:
     """
     Extract metadata from the implant volume and return the segmentation label
     dictionary.
@@ -94,7 +96,14 @@ def get_segmented_labels(label_vol):
     return label_dict
 
 
-def load_segmentation_points(label_vol, order=None, image=None):
+def load_segmentation_points(
+    label_vol: Union[sitk.Image, str],
+    order: Optional[list[str]] = None,
+    image: Optional[sitk.Image] = None,
+) -> Union[
+    Tuple[np.ndarray, np.ndarray],
+    Tuple[np.ndarray, np.ndarray, np.ndarray],
+]:
     """
     Load segmentation points from a 3D Slicer generated .seg.nrrd file
 
@@ -171,7 +180,7 @@ def load_segmentation_points(label_vol, order=None, image=None):
         )
 
 
-def markup_json_to_numpy(filename):
+def markup_json_to_numpy(filename: str) -> Tuple[np.ndarray, list[str]]:
     """
     Extract control points from a 3D Slicer generated markup JSON file
 
@@ -191,7 +200,7 @@ def markup_json_to_numpy(filename):
     return extract_control_points(data)
 
 
-def markup_json_to_dict(filename):
+def markup_json_to_dict(filename: str) -> Tuple[dict[str, np.ndarray], str]:
     """
     Extract control points from a 3D Slicer generated markup JSON file
 
@@ -212,7 +221,11 @@ def markup_json_to_dict(filename):
     return dict(zip(names, pos)), coord_string
 
 
-def create_slicer_fcsv(filename, pts_dict, direction="LPS"):
+def create_slicer_fcsv(
+    filename: str,
+    pts_dict: dict[str, np.ndarray],
+    direction: str = "LPS",
+) -> None:
     """
     Save fCSV file that is slicer readable.
     """
@@ -237,7 +250,7 @@ def create_slicer_fcsv(filename, pts_dict, direction="LPS"):
             )
 
 
-def _parse_slicer_fcsv_header(file):
+def _parse_slicer_fcsv_header(file) -> Tuple[str, str, int, list[int]]:
     "Parse the header of a slicer fcsv file, returning the last line read"
     line = file.readline()
     source_coordinate_system = None
@@ -267,7 +280,10 @@ def _parse_slicer_fcsv_header(file):
     return last_line, source_coordinate_system, label_ndx, coord_ndxs
 
 
-def read_slicer_fcsv(filename, direction="LPS"):
+def read_slicer_fcsv(
+    filename: str,
+    direction: str = "LPS",
+) -> dict[str, np.ndarray]:
     """
     Read fscv into dictionary.
     While reading, points will be converted to the specified direction.

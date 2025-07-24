@@ -1,10 +1,75 @@
 """Module to deal with coordinate systems"""
 
+from typing import Dict, Set, Tuple
+
 import numpy as np
 
 
-def find_coordinate_perm_and_flips(src: str, dst: str):
-    """Determine how to convert between coordinate systems
+def _validate_coordinate_system(
+    coord: str, pairs: Dict[str, str], coord_type: str
+) -> Set[str]:
+    """Validates a coordinate system string.
+
+    Ensures that each character in the coordinate system string belongs to the
+    set 'R/L', 'A/P', or 'I/S' and that no axis or its opposite is repeated.
+
+    Parameters
+    ----------
+    coord : str
+        The coordinate system string to validate.
+    pairs : Dict[str, str]
+        A dictionary mapping each direction to its opposite.
+    coord_type : str
+        A label for the coordinate system being validated (e.g., "Source" or
+        "Destination").
+
+    Returns
+    -------
+    Set[str]
+        A set of unique directions in the coordinate system string.
+    """
+    coord_set = set()
+    for i, c in enumerate(coord):
+        if c not in pairs:
+            raise ValueError(
+                f"{coord_type} direction '{c}' not in R/L, A/P, or I/S"
+            )
+        if c in coord_set or pairs[c] in coord_set:
+            raise ValueError(f"{coord_type} axis '{c}' not unique")
+        coord_set.add(c)
+    return coord_set
+
+
+def _build_src_order(src: str, pairs: Dict[str, str]) -> Dict[str, int]:
+    """Builds a mapping of source directions to their indices.
+
+    Parameters
+    ----------
+    src : str
+        The source coordinate system string.
+    pairs : Dict[str, str]
+        A dictionary mapping each direction to its opposite.
+
+    Returns
+    -------
+    Dict[str, int]
+        A dictionary mapping each direction in the source coordinate system
+        to its index.
+    """
+    src_order = {}
+    for i, s in enumerate(src):
+        if s not in pairs:
+            raise ValueError(f"Source direction '{s}' not in R/L, A/P, or I/S")
+        if s in src_order or pairs[s] in src_order:
+            raise ValueError(f"Source axis '{s}' not unique")
+        src_order[s] = i
+    return src_order
+
+
+def find_coordinate_perm_and_flips(
+    src: str, dst: str
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Determine how to convert between coordinate systems.
 
     This function takes a source `src` and destination `dst` string specifying
     two coordinate systems, and finds the permutation and sign flip such that a
@@ -25,11 +90,13 @@ def find_coordinate_perm_and_flips(src: str, dst: str):
     move to the patient's right).
 
     Parameters
-    ---------
-    src: str
-        String specifying a coordinate system, as described above
-    dst: str
-        String specifying a coordinate system, as described above
+    ----------
+    src : str
+        String specifying the source coordinate system, with each character
+        belonging to the set 'R/L', 'A/P', or 'I/S'.
+    dst : str
+        String specifying the destination coordinate system, with each
+        character belonging to the set 'R/L', 'A/P', or 'I/S'.
 
     Returns
     -------
@@ -39,36 +106,26 @@ def find_coordinate_perm_and_flips(src: str, dst: str):
     direction: np.ndarray(dtype=int16) (N)
         Direction array used to multiply the `src` coordinate system after
         permutation into the `dst` coordinate system
+
+    Raises
+    ------
+    ValueError
+        If the source or destination coordinate systems are invalid or
+        incompatible.
     """
     nel = len(src)
     if len(dst) != nel:
         raise ValueError("Inputs should be the same length")
-    src_u = src.upper()
-    dst_u = dst.upper()
+    src_u, dst_u = src.upper(), dst.upper()
     basic_pairs = dict(R="L", A="P", S="I")
-    pairs = dict()
-    for k, v in basic_pairs.items():
-        pairs[k] = v
-        pairs[v] = k
-    src_order = dict()
-    for i, s in enumerate(src_u):
-        if s not in pairs:
-            raise ValueError(
-                "Source direction '{}' not in R/L, A/P, or I/S".format(s)
-            )
-        if s in src_order or pairs[s] in src_order:
-            raise ValueError("Source axis '{}' not unique".format(s))
-        src_order[s] = i
+    pairs = {**basic_pairs, **{v: k for k, v in basic_pairs.items()}}
+
+    src_order = _build_src_order(src_u, pairs)
+    _validate_coordinate_system(dst_u, pairs, "Destination")
+
     perm = -1 * np.ones(nel, dtype="int16")
     direction = np.zeros(nel, dtype="int16")
-    dst_set = set()
     for i, d in enumerate(dst_u):
-        if d not in pairs:
-            raise ValueError(
-                "Destination direction '{}' not in R/L, A/P, or I/S".format(d)
-            )
-        if d in dst_set or pairs[d] in dst_set:
-            raise ValueError("Destination axis '{}' not unique".format(d))
         if d in src_order:
             perm[i] = src_order[d]
             direction[i] = 1
@@ -77,19 +134,16 @@ def find_coordinate_perm_and_flips(src: str, dst: str):
             direction[i] = -1
         else:
             raise ValueError(
-                (
-                    "Destination direction '{}' has "
-                    + "no match in source directions '{}'"
-                ).format(d, src_u)
+                f"Destination direction '{d}' has no match in source "
+                f"directions '{src_u}'"
             )
-        dst_set.add(d)
     return perm, direction
 
 
 def convert_coordinate_system(
     arr: np.ndarray, src_coord: str, dst_coord: str
 ) -> np.ndarray:
-    """Converts points in one anatomical coordinate system to another
+    """Converts points in one anatomical coordinate system to another.
 
     This will permute and multiply the NxM input array `arr` so that N
     M-dimensional points in the coordinate system specified by `src_coord` will
@@ -110,16 +164,24 @@ def convert_coordinate_system(
     Parameters
     ----------
     arr : np.ndarray (N x M)
-        N points of M dimensions (at most three)
-    src_coord: str
-        String specifying a coordinate system, as described above
-    dst_coord: str
-        String specifying a coordinate system, as described above
+        N points of M dimensions (at most three).
+    src_coord : str
+        String specifying the source coordinate system, with each character
+        belonging to the set 'R/L', 'A/P', or 'I/S'.
+    dst_coord : str
+        String specifying the destination coordinate system, with each
+        character belonging to the set 'R/L', 'A/P', or 'I/S'.
 
     Returns
     -------
-    out : np.ndarray (N x M)
-        The N input points transformed into the destination coordinate system
+    np.ndarray (N x M)
+        The N input points transformed into the destination coordinate system.
+
+    Raises
+    ------
+    ValueError
+        If the source or destination coordinate systems are invalid or
+        incompatible.
     """
     perm, direction = find_coordinate_perm_and_flips(src_coord, dst_coord)
     if arr.ndim == 1:
