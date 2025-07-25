@@ -180,7 +180,7 @@ def load_segmentation_points(
         )
 
 
-def markup_json_to_numpy(filename: str) -> Tuple[np.ndarray, list[str]]:
+def markup_json_to_numpy(filename: str) -> Tuple[np.ndarray, list[str], str]:
     """
     Extract control points from a 3D Slicer generated markup JSON file
 
