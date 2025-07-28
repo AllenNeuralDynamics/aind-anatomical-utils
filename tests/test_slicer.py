@@ -1,6 +1,7 @@
 """Tests functions in `slicer`."""
 
 import unittest
+from unittest.mock import mock_open, patch
 
 import numpy as np
 
@@ -73,23 +74,46 @@ class SlicerFilesTest(unittest.TestCase):
         """
         # Test basic read/write functionality.
         pts_dict = {"0": [0, 0, 0], "1": [1, 1, 1], "2": [2, 2, 2]}
-        sf.create_slicer_fcsv(
-            "test.fcsv",
-            pts_dict,
-        )
-        read_pts_dict = sf.read_slicer_fcsv("test.fcsv")
+        file_content = None
+
+        # Mock the open function to capture the output of create_slicer_fcsv
+        with patch("builtins.open", mock_open()) as mock_file:
+
+            def write_side_effect(content):
+                nonlocal file_content
+                if file_content is None:
+                    file_content = content
+                else:
+                    # If file_content is already set, append to it with newline
+                    file_content += content
+
+            mock_file().write.side_effect = write_side_effect
+            sf.create_slicer_fcsv("test.fcsv", pts_dict)
+        # Mock the open function to provide the captured content to
+        # read_slicer_fcsv
+        with patch(
+            "builtins.open", mock_open(read_data=file_content)
+        ) as mock_file:
+            read_pts_dict = sf.read_slicer_fcsv("test.fcsv")
+
         self.assertTrue(np.all(pts_dict["0"] == read_pts_dict["0"]))
         self.assertTrue(np.all(pts_dict["1"] == read_pts_dict["1"]))
         self.assertTrue(np.all(pts_dict["2"] == read_pts_dict["2"]))
+
         # Check errors from bad extensions.
-        self.assertRaises(ValueError, sf.read_slicer_fcsv, "test.xlxs")
+        with self.assertRaises(ValueError):
+            sf.read_slicer_fcsv("test.xlxs")
+
         # Assert that the function raises a ValueError when direction is wrong.
-        self.assertRaises(
-            ValueError, sf.read_slicer_fcsv, "test.fcsv", direction="XYZ"
-        )
+        with self.assertRaises(ValueError):
+            sf.read_slicer_fcsv("test.fcsv", direction="XYZ")
+
         # Assert that the function corrects mismatched directions
-        fixed_pt_dict = sf.read_slicer_fcsv("test.fcsv", direction="RAS")
-        self.assertTrue(pts_dict["0"][0] == -fixed_pt_dict["0"][0])
+        with patch(
+            "builtins.open", mock_open(read_data=file_content)
+        ) as mock_file:
+            fixed_pt_dict = sf.read_slicer_fcsv("test.fcsv", direction="RAS")
+            self.assertTrue(pts_dict["0"][0] == -fixed_pt_dict["0"][0])
 
 
 if __name__ == "__main__":

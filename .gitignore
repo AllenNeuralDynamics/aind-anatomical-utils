@@ -137,3 +137,10 @@ dmypy.json
 
 # MacOs
 **/.DS_Store
+
+# Visual Studio Code
+.vscode/
+
+# Data
+*.fcsv
+*.csv
