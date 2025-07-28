@@ -224,9 +224,11 @@ def markup_json_to_dict(filename: str) -> Tuple[dict[str, NDArray], str]:
 
 def create_slicer_fcsv(
     filename: str,
-    pts_dict: dict[str, NDArray]
-    | dict[str, list[int]]
-    | dict[str, list[float]],
+    pts_dict: Union[
+        dict[str, NDArray],
+        dict[str, list[int]],
+        dict[str, list[float]],
+    ],
     direction: str = "LPS",
 ) -> None:
     """
