@@ -3,6 +3,7 @@
 from typing import Dict, Set, Tuple
 
 import numpy as np
+from numpy.typing import NDArray
 
 
 def _validate_coordinate_system(
@@ -68,7 +69,7 @@ def _build_src_order(src: str, pairs: Dict[str, str]) -> Dict[str, int]:
 
 def find_coordinate_perm_and_flips(
     src: str, dst: str
-) -> Tuple[np.ndarray, np.ndarray]:
+) -> Tuple[NDArray[np.int16], NDArray[np.int16]]:
     """Determine how to convert between coordinate systems.
 
     This function takes a source `src` and destination `dst` string specifying
@@ -141,8 +142,8 @@ def find_coordinate_perm_and_flips(
 
 
 def convert_coordinate_system(
-    arr: np.ndarray, src_coord: str, dst_coord: str
-) -> np.ndarray:
+    arr: NDArray, src_coord: str, dst_coord: str
+) -> NDArray:
     """Converts points in one anatomical coordinate system to another.
 
     This will permute and multiply the NxM input array `arr` so that N

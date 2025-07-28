@@ -3,10 +3,11 @@
 import json
 import logging
 import re
-from typing import Optional, Tuple, Union
+from typing import IO, Optional, Tuple, Union
 
 import numpy as np
 import SimpleITK as sitk
+from numpy.typing import NDArray
 
 from aind_anatomical_utils.coordinate_systems import convert_coordinate_system
 from aind_anatomical_utils.sitk_volume import (
@@ -20,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def extract_control_points(
     json_data: dict,
-) -> Tuple[np.ndarray, list[str], str]:
+) -> Tuple[NDArray, list[str], str]:
     """
     Extract points and names from slicer json dict
 
@@ -101,8 +102,8 @@ def load_segmentation_points(
     order: Optional[list[str]] = None,
     image: Optional[sitk.Image] = None,
 ) -> Union[
-    Tuple[np.ndarray, np.ndarray],
-    Tuple[np.ndarray, np.ndarray, np.ndarray],
+    Tuple[NDArray, NDArray],
+    Tuple[NDArray, NDArray, NDArray],
 ]:
     """
     Load segmentation points from a 3D Slicer generated .seg.nrrd file
@@ -180,7 +181,7 @@ def load_segmentation_points(
         )
 
 
-def markup_json_to_numpy(filename: str) -> Tuple[np.ndarray, list[str], str]:
+def markup_json_to_numpy(filename: str) -> Tuple[NDArray, list[str], str]:
     """
     Extract control points from a 3D Slicer generated markup JSON file
 
@@ -200,7 +201,7 @@ def markup_json_to_numpy(filename: str) -> Tuple[np.ndarray, list[str], str]:
     return extract_control_points(data)
 
 
-def markup_json_to_dict(filename: str) -> Tuple[dict[str, np.ndarray], str]:
+def markup_json_to_dict(filename: str) -> Tuple[dict[str, NDArray], str]:
     """
     Extract control points from a 3D Slicer generated markup JSON file
 
@@ -223,7 +224,9 @@ def markup_json_to_dict(filename: str) -> Tuple[dict[str, np.ndarray], str]:
 
 def create_slicer_fcsv(
     filename: str,
-    pts_dict: dict[str, np.ndarray],
+    pts_dict: dict[str, NDArray]
+    | dict[str, list[int]]
+    | dict[str, list[float]],
     direction: str = "LPS",
 ) -> None:
     """
@@ -250,7 +253,7 @@ def create_slicer_fcsv(
             )
 
 
-def _parse_slicer_fcsv_header(file) -> Tuple[str, str, int, list[int]]:
+def _parse_slicer_fcsv_header(file: IO) -> Tuple[str, str, int, list[int]]:
     "Parse the header of a slicer fcsv file, returning the last line read"
     line = file.readline()
     source_coordinate_system = None
@@ -283,7 +286,7 @@ def _parse_slicer_fcsv_header(file) -> Tuple[str, str, int, list[int]]:
 def read_slicer_fcsv(
     filename: str,
     direction: str = "LPS",
-) -> dict[str, np.ndarray]:
+) -> dict[str, NDArray]:
     """
     Read fscv into dictionary.
     While reading, points will be converted to the specified direction.
