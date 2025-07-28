@@ -18,7 +18,7 @@ from aind_anatomical_utils.utils import find_indices_equal_to
 logger = logging.getLogger(__name__)
 
 
-def extract_control_points(json_data: dict) -> Tuple[np.ndarray, list]:
+def extract_control_points(json_data: dict) -> Tuple[np.ndarray, list, str]:
     """
     Extract points and names from slicer json dict
 
@@ -231,7 +231,7 @@ def create_slicer_fcsv(filename, pts_dict, direction="LPS"):
             # leading/trailing whitespace
             key = re.sub(r'[\r\n,\'"\\]+', "", key.strip())
             f.write(
-                "{:d},{:f},{:f},{:f},0,0,0,1,1,1,0,{!s},,vtkMRMLScalarVolumeNode1\n".format(  # noqa: E501
+                "{:d},{:f},{:f},{:f},0,0,0,1,1,1,0,{!s},,vtkMRMLScalarVolumeNode1\n".format(
                     pt_no + 1, x, y, z, key
                 )
             )

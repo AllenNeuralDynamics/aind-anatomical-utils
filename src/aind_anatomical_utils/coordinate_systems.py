@@ -3,7 +3,7 @@
 import numpy as np
 
 
-def find_coordinate_perm_and_flips(src: str, dst: str):  # noqa: C901
+def find_coordinate_perm_and_flips(src: str, dst: str):
     """Determine how to convert between coordinate systems
 
     This function takes a source `src` and destination `dst` string specifying

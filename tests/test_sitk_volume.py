@@ -27,11 +27,11 @@ class SITKTest(unittest.TestCase):
 
     def test_transform_sitk_indices_to_physical_points(self) -> None:
         simg = sitk.Image(256, 128, 64, sitk.sitkUInt8)
-        for ndxs, ans in self.test_index_translation_sets:
+        for ndxs, answer in self.test_index_translation_sets:
             received = sitk_volume.transform_sitk_indices_to_physical_points(
                 simg, ndxs
             )
-            self.assertTrue(np.allclose(ans, received))
+            self.assertTrue(np.allclose(answer, received))
 
 
 if __name__ == "__main__":
