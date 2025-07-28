@@ -34,6 +34,6 @@ jobs:
       python-version: ${{ matrix.python-version }}
       package-name: aind_anatomical_utils
       run-mypy: true
-      smoke-test-paths: "tests test-data"
+      smoke-test-paths: "tests"
     secrets:
       repo-token: ${{ secrets.GITHUB_TOKEN }}
