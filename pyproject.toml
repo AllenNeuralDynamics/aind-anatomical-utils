@@ -26,7 +26,7 @@ Changelog = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/blob/m
 
 
 [dependency-groups]
-dev = ['codespell', 'pytest', 'pytest-cov', 'ruff', 'interrogate']
+dev = ['codespell', 'pytest', 'pytest-cov', 'ruff', 'interrogate', 'mypy']
 vscode = [{include-group = 'dev'}, 'ipykernel', 'pip']
 docs = [
   {include-group = 'dev'},
