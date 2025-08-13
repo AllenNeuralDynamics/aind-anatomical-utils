@@ -1,14 +1,45 @@
 """Module to deal with coordinate systems"""
 
-from typing import Dict, Set, Tuple
+from __future__ import annotations
+
+from dataclasses import dataclass
+from enum import Enum
+from functools import lru_cache
+from typing import Final, Tuple, Union
 
 import numpy as np
 from numpy.typing import NDArray
 
 
-def _validate_coordinate_system(
-    coord: str, pairs: Dict[str, str], coord_type: str
-) -> Set[str]:
+class CoordSys(str, Enum):
+    RAS = "RAS"
+    LAS = "LAS"
+    RPS = "RPS"
+    LPS = "LPS"
+    RAI = "RAI"
+    LAI = "LAI"
+    RPI = "RPI"
+    LPI = "LPI"
+
+
+CS = Union[str, CoordSys]
+
+# axis mapping: (axis_index, sign)
+_AXES: Final = {
+    "L": (0, -1),
+    "R": (0, +1),
+    "P": (1, -1),
+    "A": (1, +1),
+    "I": (2, -1),
+    "S": (2, +1),
+}
+
+
+def _norm_code(code: CS) -> str:
+    return code.value if isinstance(code, CoordSys) else str(code).upper()
+
+
+def _validate_code(code: str) -> None:
     """Validates a coordinate system string.
 
     Ensures that each character in the coordinate system string belongs to the
@@ -18,58 +49,77 @@ def _validate_coordinate_system(
     ----------
     coord : str
         The coordinate system string to validate.
-    pairs : Dict[str, str]
-        A dictionary mapping each direction to its opposite.
-    coord_type : str
-        A label for the coordinate system being validated (e.g., "Source" or
-        "Destination").
 
     Returns
     -------
     Set[str]
         A set of unique directions in the coordinate system string.
     """
-    coord_set = set()
-    for i, c in enumerate(coord):
-        if c not in pairs:
+    seen_axes = set()
+    for c in code:
+        if c not in _AXES:
+            raise ValueError(f"Direction '{c}' not in R/L, A/P, or I/S")
+        ax, _ = _AXES[c]
+        if ax in seen_axes:
+            raise ValueError(f"Axis for '{c}' not unique in code '{code}'")
+        seen_axes.add(ax)
+
+
+@dataclass(frozen=True, slots=True)
+class Orientation:
+    perm: NDArray[np.intp]  # (N,) permutation indices
+    sign: NDArray[np.int8]  # (N,) ±1
+    R: NDArray[np.float64]  # (N,N) orthonormal reorientation matrix
+    det: float  # determinant of R (±1)
+
+
+@lru_cache(maxsize=None)
+def _orientation(src: str, dst: str) -> Orientation:
+    if len(src) != len(dst):
+        raise ValueError("Source and destination must have same length")
+    _validate_code(src)
+    _validate_code(dst)
+
+    # Build R by rows: for each dst letter, pick the src axis and sign
+    N = len(src)
+    R = np.zeros((N, N), dtype=np.float64)
+    perm = np.empty(N, dtype=np.intp)
+    sign = np.empty(N, dtype=np.int8)
+
+    # map from src letters to (axis_index, sign)
+    # e.g., 'R' -> (0,+1), 'L' -> (0,-1), etc.
+    # src_axis = {c: _AXES[c][0] for c in src}
+    for i, d in enumerate(dst):
+        d_ax, d_sgn = _AXES[d]
+        # find letter in src whose axis matches d_ax (either direction)
+        # we scan src to find the axis match and the sign from src letter
+        for j, s in enumerate(src):
+            s_ax, s_sgn = _AXES[s]
+            if s_ax == d_ax:
+                perm[i] = j
+                sign[i] = 1 if d_sgn == s_sgn else -1
+                R[i, j] = float(sign[i])
+                break
+        else:
             raise ValueError(
-                f"{coord_type} direction '{c}' not in R/L, A/P, or I/S"
+                f"Destination direction '{d}' has no match in source '{src}'"
             )
-        if c in coord_set or pairs[c] in coord_set:
-            raise ValueError(f"{coord_type} axis '{c}' not unique")
-        coord_set.add(c)
-    return coord_set
+    det = float(round(np.linalg.det(R)))  # should be ±1
+    return Orientation(perm=perm, sign=sign, R=R, det=det)
 
 
-def _build_src_order(src: str, pairs: Dict[str, str]) -> Dict[str, int]:
-    """Builds a mapping of source directions to their indices.
+def orientation_matrix(src: CS, dst: CS) -> NDArray[np.float64]:
+    """Return orthonormal matrix R mapping points in src->dst
 
-    Parameters
-    ----------
-    src : str
-        The source coordinate system string.
-    pairs : Dict[str, str]
-        A dictionary mapping each direction to its opposite.
-
-    Returns
-    -------
-    Dict[str, int]
-        A dictionary mapping each direction in the source coordinate system
-        to its index.
+    (row-major: p_dst = p_src @ R.T).
     """
-    src_order = {}
-    for i, s in enumerate(src):
-        if s not in pairs:
-            raise ValueError(f"Source direction '{s}' not in R/L, A/P, or I/S")
-        if s in src_order or pairs[s] in src_order:
-            raise ValueError(f"Source axis '{s}' not unique")
-        src_order[s] = i
-    return src_order
+    src_n, dst_n = _norm_code(src), _norm_code(dst)
+    return _orientation(src_n, dst_n).R
 
 
 def find_coordinate_perm_and_flips(
-    src: str, dst: str
-) -> Tuple[NDArray[np.int16], NDArray[np.int16]]:
+    src: CS, dst: CS
+) -> Tuple[NDArray[np.intp], NDArray[np.int8]]:
     """Determine how to convert between coordinate systems.
 
     This function takes a source `src` and destination `dst` string specifying
@@ -114,35 +164,19 @@ def find_coordinate_perm_and_flips(
         If the source or destination coordinate systems are invalid or
         incompatible.
     """
-    nel = len(src)
-    if len(dst) != nel:
-        raise ValueError("Inputs should be the same length")
-    src_u, dst_u = src.upper(), dst.upper()
-    basic_pairs = dict(R="L", A="P", S="I")
-    pairs = {**basic_pairs, **{v: k for k, v in basic_pairs.items()}}
-
-    src_order = _build_src_order(src_u, pairs)
-    _validate_coordinate_system(dst_u, pairs, "Destination")
-
-    perm = -1 * np.ones(nel, dtype="int16")
-    direction = np.zeros(nel, dtype="int16")
-    for i, d in enumerate(dst_u):
-        if d in src_order:
-            perm[i] = src_order[d]
-            direction[i] = 1
-        elif pairs[d] in src_order:
-            perm[i] = src_order[pairs[d]]
-            direction[i] = -1
-        else:
-            raise ValueError(
-                f"Destination direction '{d}' has no match in source "
-                f"directions '{src_u}'"
-            )
-    return perm, direction
+    src_n, dst_n = _norm_code(src), _norm_code(dst)
+    o = _orientation(src_n, dst_n)
+    return o.perm.copy(), o.sign.copy()
 
 
 def convert_coordinate_system(
-    arr: NDArray, src_coord: str, dst_coord: str
+    arr: NDArray,
+    src_coord: CS,
+    dst_coord: CS,
+    *,
+    axis: int = -1,
+    copy: bool = True,
+    prefer_matrix: bool | None = None,
 ) -> NDArray:
     """Converts points in one anatomical coordinate system to another.
 
@@ -184,10 +218,41 @@ def convert_coordinate_system(
         If the source or destination coordinate systems are invalid or
         incompatible.
     """
-    perm, direction = find_coordinate_perm_and_flips(src_coord, dst_coord)
-    if arr.ndim == 1:
-        out = arr[perm]
-    else:
-        out = arr[:, perm]
-    out *= direction
+    src_n, dst_n = _norm_code(src_coord), _norm_code(dst_coord)
+    if src_n == dst_n:
+        return arr.copy() if copy else arr
+
+    o = _orientation(src_n, dst_n)
+
+    if prefer_matrix is None:
+        prefer_matrix = np.issubdtype(arr.dtype, np.floating) and arr.ndim > 1
+
+    if prefer_matrix:
+        arr_m = np.moveaxis(arr, axis, -1)
+        out = arr_m @ o.R.T
+        return np.moveaxis(out, -1, axis)
+
+    out = np.take(arr, o.perm, axis=axis)  # copy
+    # broadcast sign along `axis`
+    shape = [1] * out.ndim
+    shape[axis] = len(o.sign)
+    out *= o.sign.reshape(shape)
     return out
+
+
+def reorient_mesh_vertices_faces(
+    vertices: NDArray[np.floating],
+    faces: NDArray[np.integer],
+    src: CS,
+    dst: CS,
+) -> tuple[NDArray[np.floating], NDArray[np.integer]]:
+    """Reorient mesh vertices from src->dst and flip face winding if
+    reflection."""
+    R = orientation_matrix(src, dst)
+    v2 = vertices @ R.T
+    det = float(round(np.linalg.det(R)))
+    if det < 0:
+        f2 = faces[:, ::-1].copy()
+    else:
+        f2 = faces.copy()
+    return v2, f2
