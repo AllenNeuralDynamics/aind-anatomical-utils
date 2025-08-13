@@ -83,49 +83,49 @@ class CoordinateSystemsTest(unittest.TestCase):
         )
         self.assertRaisesRegex(
             ValueError,
-            "Inputs should be the same length",
+            "Source and destination must have same length",
             cs.find_coordinate_perm_and_flips,
             "RA",
             "RAS",
         )
         self.assertRaisesRegex(
             ValueError,
-            "Source axis 'R' not unique",
+            "Axis for 'R' not unique in code 'RRS'",
             cs.find_coordinate_perm_and_flips,
             "RRS",
             "RAS",
         )
         self.assertRaisesRegex(
             ValueError,
-            "Source axis 'L' not unique",
+            "Axis for 'L' not unique in code 'RLS'",
             cs.find_coordinate_perm_and_flips,
             "RLS",
             "RAS",
         )
         self.assertRaisesRegex(
             ValueError,
-            "Destination axis 'L' not unique",
+            "Axis for 'L' not unique in code 'RLS'",
             cs.find_coordinate_perm_and_flips,
             "RAS",
             "RLS",
         )
         self.assertRaisesRegex(
             ValueError,
-            "Source direction 'D' not in R/L, A/P, or I/S",
+            "Direction 'D' not in R/L, A/P, or I/S",
             cs.find_coordinate_perm_and_flips,
             "RAD",
             "RAS",
         )
         self.assertRaisesRegex(
             ValueError,
-            "Destination direction 'D' not in R/L, A/P, or I/S",
+            "Direction 'D' not in R/L, A/P, or I/S",
             cs.find_coordinate_perm_and_flips,
             "RAS",
             "RAD",
         )
         self.assertRaisesRegex(
             ValueError,
-            "Destination direction 'S' has no match in source directions 'RA'",
+            "Destination direction 'S' has no match in source 'RA'",
             cs.find_coordinate_perm_and_flips,
             "RA",
             "RS",
