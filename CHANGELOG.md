@@ -1,3 +1,9 @@
+## v0.2.0 (2025-08-13)
+
+### Feat
+
+- improve coordinate system conversions (#5)
+
 ## v0.1.1 (2025-07-28)
 
 ### Fix
