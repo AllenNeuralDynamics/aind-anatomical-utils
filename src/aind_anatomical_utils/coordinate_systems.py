@@ -8,7 +8,11 @@ from functools import lru_cache
 from typing import Final, Tuple, Union
 
 import numpy as np
-from numpy.typing import NDArray
+from numpy import typing as npt
+
+Intp1D = npt.NDArray[np.intp]
+Int8_1D = npt.NDArray[np.int8]
+F64Mat = npt.NDArray[np.float64]
 
 
 class CoordSys(str, Enum):
@@ -65,11 +69,12 @@ def _validate_code(code: str) -> None:
         seen_axes.add(ax)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class Orientation:
-    perm: NDArray[np.intp]  # (N,) permutation indices
-    sign: NDArray[np.int8]  # (N,) ±1
-    R: NDArray[np.float64]  # (N,N) orthonormal reorientation matrix
+    __slots__ = ("perm", "sign", "R", "det")
+    perm: Intp1D  # (N,) permutation indices
+    sign: Int8_1D  # (N,) ±1
+    R: F64Mat  # (N,N) orthonormal reorientation matrix
     det: float  # determinant of R (±1)
 
 
@@ -108,7 +113,7 @@ def _orientation(src: str, dst: str) -> Orientation:
     return Orientation(perm=perm, sign=sign, R=R, det=det)
 
 
-def orientation_matrix(src: CS, dst: CS) -> NDArray[np.float64]:
+def coordinate_transform_matrix(src: CS, dst: CS) -> F64Mat:
     """Return orthonormal matrix R mapping points in src->dst
 
     (row-major: p_dst = p_src @ R.T).
@@ -117,9 +122,7 @@ def orientation_matrix(src: CS, dst: CS) -> NDArray[np.float64]:
     return _orientation(src_n, dst_n).R
 
 
-def find_coordinate_perm_and_flips(
-    src: CS, dst: CS
-) -> Tuple[NDArray[np.intp], NDArray[np.int8]]:
+def find_coordinate_perm_and_flips(src: CS, dst: CS) -> Tuple[Intp1D, Int8_1D]:
     """Determine how to convert between coordinate systems.
 
     This function takes a source `src` and destination `dst` string specifying
@@ -170,14 +173,14 @@ def find_coordinate_perm_and_flips(
 
 
 def convert_coordinate_system(
-    arr: NDArray,
+    arr: npt.NDArray,
     src_coord: CS,
     dst_coord: CS,
     *,
     axis: int = -1,
     copy: bool = True,
     prefer_matrix: bool | None = None,
-) -> NDArray:
+) -> npt.NDArray:
     """Converts points in one anatomical coordinate system to another.
 
     This will permute and multiply the NxM input array `arr` so that N
@@ -241,16 +244,18 @@ def convert_coordinate_system(
 
 
 def reorient_mesh_vertices_faces(
-    vertices: NDArray[np.floating],
-    faces: NDArray[np.integer],
+    vertices: npt.NDArray[np.floating],
+    faces: npt.NDArray[np.integer],
     src: CS,
     dst: CS,
-) -> tuple[NDArray[np.floating], NDArray[np.integer]]:
+) -> tuple[npt.NDArray[np.floating], npt.NDArray[np.integer]]:
     """Reorient mesh vertices from src->dst and flip face winding if
     reflection."""
-    R = orientation_matrix(src, dst)
+    src_n, dst_n = _norm_code(src), _norm_code(dst)
+    orientation = _orientation(src_n, dst_n)
+    R = orientation.R
     v2 = vertices @ R.T
-    det = float(round(np.linalg.det(R)))
+    det = orientation.det
     if det < 0:
         f2 = faces[:, ::-1].copy()
     else:
