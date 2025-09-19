@@ -3,7 +3,7 @@
 import json
 import logging
 import re
-from typing import IO, Optional, Tuple, Union
+from typing import IO, Optional, Union
 
 import numpy as np
 import SimpleITK as sitk
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 def extract_control_points(
     json_data: dict,
-) -> Tuple[NDArray, list[str], str]:
+) -> tuple[NDArray, list[str], str]:
     """
     Extract points and names from slicer json dict
 
@@ -69,7 +69,7 @@ def find_seg_nrrd_header_segment_info(header: dict) -> dict:
     )
     segment_info = dict()
     for m in matches:
-        segment_name = header["{}_Name".format(m[1])]
+        segment_name = header[f"{m[1]}_Name"]
         segment_info[segment_name] = int(header[m[0]])
     return segment_info
 
@@ -102,8 +102,8 @@ def load_segmentation_points(
     order: Optional[list[str]] = None,
     image: Optional[sitk.Image] = None,
 ) -> Union[
-    Tuple[NDArray, NDArray],
-    Tuple[NDArray, NDArray, NDArray],
+    tuple[NDArray, NDArray],
+    tuple[NDArray, NDArray, NDArray],
 ]:
     """
     Load segmentation points from a 3D Slicer generated .seg.nrrd file
@@ -181,7 +181,7 @@ def load_segmentation_points(
         )
 
 
-def markup_json_to_numpy(filename: str) -> Tuple[NDArray, list[str], str]:
+def markup_json_to_numpy(filename: str) -> tuple[NDArray, list[str], str]:
     """
     Extract control points from a 3D Slicer generated markup JSON file
 
@@ -201,7 +201,7 @@ def markup_json_to_numpy(filename: str) -> Tuple[NDArray, list[str], str]:
     return extract_control_points(data)
 
 
-def markup_json_to_dict(filename: str) -> Tuple[dict[str, NDArray], str]:
+def markup_json_to_dict(filename: str) -> tuple[dict[str, NDArray], str]:
     """
     Extract control points from a 3D Slicer generated markup JSON file
 
@@ -237,7 +237,7 @@ def create_slicer_fcsv(
     # Create output file
     with open(filename, "w+") as f:
         f.write("# Markups fiducial file version = 4.11\n")
-        f.write("# CoordinateSystem = {}\n".format(direction))
+        f.write(f"# CoordinateSystem = {direction}\n")
         f.write(
             "# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID\n"  # noqa: E501
         )
@@ -249,13 +249,12 @@ def create_slicer_fcsv(
             # leading/trailing whitespace
             key = re.sub(r'[\r\n,\'"\\]+', "", key.strip())
             f.write(
-                "{:d},{:f},{:f},{:f},0,0,0,1,1,1,0,{!s},,vtkMRMLScalarVolumeNode1\n".format(
-                    pt_no + 1, x, y, z, key
-                )
+                f"{pt_no + 1:d},{x:f},{y:f},{z:f},0,0,0,1,1,1,0,"
+                f"{key!s},,vtkMRMLScalarVolumeNode1\n"
             )
 
 
-def _parse_slicer_fcsv_header(file: IO) -> Tuple[str, str, int, list[int]]:
+def _parse_slicer_fcsv_header(file: IO) -> tuple[str, str, int, list[int]]:
     "Parse the header of a slicer fcsv file, returning the last line read"
     line = file.readline()
     source_coordinate_system = None
@@ -316,7 +315,7 @@ def read_slicer_fcsv(
 
     point_dictionary = {}
 
-    with open(filename, "r") as file:
+    with open(filename) as file:
         line, source_coordinate_system, label_ndx, coord_ndxs = (
             _parse_slicer_fcsv_header(file)
         )

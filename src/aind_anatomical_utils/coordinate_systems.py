@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from functools import lru_cache
-from typing import Final, Tuple, Union
+from functools import cache
+from typing import TYPE_CHECKING, Final, Union
 
 import numpy as np
-from numpy import typing as npt
 
-Intp1D = npt.NDArray[np.intp]
-Int8_1D = npt.NDArray[np.int8]
-F64Mat = npt.NDArray[np.float64]
+if TYPE_CHECKING:
+    from numpy.typing import NDArray
+
+# Type aliases - using simple assignment which works with PEP 585
 
 
 class CoordSys(str, Enum):
@@ -72,13 +72,13 @@ def _validate_code(code: str) -> None:
 @dataclass(frozen=True)
 class Orientation:
     __slots__ = ("perm", "sign", "R", "det")
-    perm: Intp1D  # (N,) permutation indices
-    sign: Int8_1D  # (N,) ±1
-    R: F64Mat  # (N,N) orthonormal reorientation matrix
+    perm: NDArray[np.intp]  # (N,) permutation indices
+    sign: NDArray[np.int8]  # (N,) ±1
+    R: NDArray[np.float64]  # (N,N) orthonormal reorientation matrix
     det: float  # determinant of R (±1)
 
 
-@lru_cache(maxsize=None)
+@cache
 def _orientation(src: str, dst: str) -> Orientation:
     if len(src) != len(dst):
         raise ValueError("Source and destination must have same length")
@@ -113,7 +113,7 @@ def _orientation(src: str, dst: str) -> Orientation:
     return Orientation(perm=perm, sign=sign, R=R, det=det)
 
 
-def coordinate_transform_matrix(src: CS, dst: CS) -> F64Mat:
+def coordinate_transform_matrix(src: CS, dst: CS) -> NDArray[np.float64]:
     """Return orthonormal matrix R mapping points in src->dst
 
     (row-major: p_dst = p_src @ R.T).
@@ -122,7 +122,9 @@ def coordinate_transform_matrix(src: CS, dst: CS) -> F64Mat:
     return _orientation(src_n, dst_n).R
 
 
-def find_coordinate_perm_and_flips(src: CS, dst: CS) -> Tuple[Intp1D, Int8_1D]:
+def find_coordinate_perm_and_flips(
+    src: CS, dst: CS
+) -> tuple[NDArray[np.intp], NDArray[np.int8]]:
     """Determine how to convert between coordinate systems.
 
     This function takes a source `src` and destination `dst` string specifying
@@ -173,14 +175,14 @@ def find_coordinate_perm_and_flips(src: CS, dst: CS) -> Tuple[Intp1D, Int8_1D]:
 
 
 def convert_coordinate_system(
-    arr: npt.NDArray,
+    arr: NDArray,
     src_coord: CS,
     dst_coord: CS,
     *,
     axis: int = -1,
     copy: bool = True,
     prefer_matrix: bool | None = None,
-) -> npt.NDArray:
+) -> NDArray:
     """Converts points in one anatomical coordinate system to another.
 
     This will permute and multiply the NxM input array `arr` so that N
@@ -244,11 +246,11 @@ def convert_coordinate_system(
 
 
 def reorient_mesh_vertices_faces(
-    vertices: npt.NDArray[np.floating],
-    faces: npt.NDArray[np.integer],
+    vertices: NDArray[np.floating],
+    faces: NDArray[np.integer],
     src: CS,
     dst: CS,
-) -> tuple[npt.NDArray[np.floating], npt.NDArray[np.integer]]:
+) -> tuple[NDArray[np.floating], NDArray[np.integer]]:
     """Reorient mesh vertices from src->dst and flip face winding if
     reflection."""
     src_n, dst_n = _norm_code(src), _norm_code(dst)

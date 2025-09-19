@@ -1,25 +1,52 @@
 #!/bin/sh
+# Run linters (default) or linters+checks without rebuilding the uv env.
 
-# From the root directory, execute `./scripts/run_linters_and_checks.sh` to
-# run linters. Execute `./scripts/run_linters_and_checks.sh --checks`
-# to run linters and checks.
+set -eu
+
 main() {
-  # As a default, run linters only. Add option to run checks
-  case $1 in
-      -c|--checks) checks=true;
+  # Parse optional flag
+  CHECKS=false
+  case "${1:-}" in
+    -c|--checks) CHECKS=true ;;
   esac
-  # Run linters
-  uv run --frozen ruff format
 
-  # Optionally run style checks, docstring coverage, and test coverage.
-  # The results of the test coverage will additionally be saved to htmlcov.
-  if [ $checks ]
-  then
-    uv run --frozen ruff check
-    uv run --frozen mypy
-    uv run --frozen interrogate -v
-    uv run --frozen codespell --check-filenames
-    uv run --frozen pytest --cov aind_anatomical_utils
+  # Where your project venv lives (override with ENV_PATH=/some/venv)
+  ENV_PATH="${ENV_PATH:-.venv}"
+
+  # Prefer an already-active venv
+  if [ -n "${VIRTUAL_ENV:-}" ]; then
+    BIN="$VIRTUAL_ENV/bin"
+    run() { "$BIN/$@"; }
+
+  # Or prefer a project-local venv if it exists
+  elif [ -x "$ENV_PATH/bin/python" ]; then
+    BIN="$ENV_PATH/bin"
+    run() { "$BIN/$@"; }
+
+  # Otherwise fall back to uv, but do NOT resync/recreate the env
+  else
+    # Optional interpreter pin: from $PYVER or .python-version if present
+    PYVER="${PYVER:-}"
+    if [ -z "$PYVER" ] && [ -f .python-version ]; then
+      PYVER="$(tr -d ' \n' < .python-version)"
+    fi
+
+    export UV_PROJECT_ENVIRONMENT="$ENV_PATH"  # reuse this env path
+    UV_ARGS="--frozen --no-sync"               # do not check/sync env
+    [ -n "$PYVER" ] && UV_ARGS="$UV_ARGS --python $PYVER"
+
+    run() { uv run $UV_ARGS -- "$@"; }
+  fi
+
+  # Linters
+  run ruff format
+
+  if [ "$CHECKS" = true ]; then
+    run ruff check
+    run mypy
+    run interrogate -v
+    run codespell --check-filenames
+    run pytest --cov aind_anatomical_utils
   fi
 }
 
