@@ -6,7 +6,7 @@ https://github.com/SimpleITK/TUTORIAL/blob/main/LICENSE
 
 """
 
-from typing import Optional
+from __future__ import annotations
 
 import numpy as np
 import SimpleITK as sitk
@@ -15,8 +15,8 @@ from numpy.typing import NDArray
 
 def transform_sitk_indices_to_physical_points(
     image: sitk.Image, index_arr: NDArray
-) -> NDArray:
-    """Transforms indices indices of image to physical points
+) -> NDArray[np.floating]:
+    """Transforms indices of image to physical points
 
     For a SimpleITK image `image` and a list of indices `index_arr`, transform
     each index to a physical point.
@@ -43,8 +43,8 @@ def transform_sitk_indices_to_physical_points(
 
 
 def find_points_equal_to(
-    image: sitk.Image, label_value: Optional[int] = None
-) -> NDArray:
+    image: sitk.Image, label_value: int | None = None
+) -> NDArray[np.floating]:
     """
     Get the physical positions of all voxels in the implant volume that match
     the given label value.
