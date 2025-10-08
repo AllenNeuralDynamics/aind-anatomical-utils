@@ -144,3 +144,6 @@ dmypy.json
 # Data
 *.fcsv
 *.csv
+
+# Claude
+.claude/
