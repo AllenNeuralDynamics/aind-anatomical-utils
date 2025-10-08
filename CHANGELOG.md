@@ -1,3 +1,9 @@
+## v0.3.0 (2025-10-08)
+
+### Feat
+
+- move fix_corner_compute_origin to this repo from aind-zarr-utils
+
 ## v0.2.0 (2025-08-13)
 
 ### Feat
