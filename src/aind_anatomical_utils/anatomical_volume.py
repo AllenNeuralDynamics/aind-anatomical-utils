@@ -10,7 +10,11 @@ from itertools import product
 import numpy as np
 from numpy.typing import NDArray
 
-from aind_anatomical_utils.coordinate_systems import _norm_code, _orientation
+from aind_anatomical_utils.coordinate_systems import (
+    _norm_code,
+    convert_coordinate_system,
+    find_coordinate_perm_and_flips,
+)
 
 
 def _corner_indices(size: NDArray, outer: bool = True) -> NDArray[np.float64]:
@@ -28,7 +32,7 @@ def fix_corner_compute_origin(
     direction: NDArray[np.float64],
     target_point: Sequence[float],
     corner_code: str = "RAS",
-    target_frame: str | None = None,
+    target_frame: str = "LPS",
     use_outer_box: bool = False,
 ) -> tuple[tuple[float, float, float], NDArray[np.float64], int]:
     """
@@ -50,7 +54,7 @@ def fix_corner_compute_origin(
         "RAS").  Default is "LPI".
     target_frame : str, optional
         3-letter code specifying the coordinate frame of `target_point`.
-        Defaults to `corner_code`.
+        Defaults to `LPS`.
     use_outer_box : bool, optional
         If True, use bounding box corners (-0.5, size-0.5); if False, use voxel
         centers (0, size-1).  Default is False.
@@ -70,28 +74,33 @@ def fix_corner_compute_origin(
     image corner matches a desired physical location, taking into account
     direction cosines and coordinate conventions.
     """
-    if target_frame is None:
-        target_frame = corner_code
-
     # Normalize to 3D
     size_arr = np.array(list(size) + [1, 1, 1])[:3].astype(float)
     spacing_arr = np.array(list(spacing) + [1, 1, 1])[:3].astype(float)
+    target_point_arr = np.array(list(target_point) + [1, 1, 1])[:3].astype(
+        float
+    )
     D = np.asarray(direction, float).reshape(3, 3)
 
     # All 8 corners in continuous index space and their LPS offsets from origin
     corners_idx = _corner_indices(size_arr, outer=use_outer_box)  # (8,3)
     offsets_lps = (corners_idx * spacing_arr) @ D.T  # (8,3)
 
+    _, coord_sign = find_coordinate_perm_and_flips(corner_code, "LPS")
     # Pick the corner that is "most" along the requested code axes
-    s_align = _orientation(_norm_code(corner_code), "LPS").sign
-    vals = offsets_lps * s_align  # convert to that code's axis sense
+    vals = offsets_lps * coord_sign  # convert to that code's axis sense
     # lexicographic argmax: prioritize x, then y, then z in that code
     idx = np.lexsort((vals[:, 2], vals[:, 1], vals[:, 0]))[-1]
     corner_offset_lps = offsets_lps[idx]
 
     # Convert target point to LPS and solve: target = origin + corner_offset
-    s_target = _orientation(_norm_code(target_frame), "LPS").sign
-    target_lps = np.asarray(target_point, float) * s_target
+    target_frame_n = _norm_code(target_frame)
+    if target_frame_n == "LPS":
+        target_lps = target_point_arr
+    else:
+        target_lps = convert_coordinate_system(
+            target_point_arr, target_frame, "LPS"
+        )
     origin_lps = target_lps - corner_offset_lps
 
     return tuple(origin_lps), corners_idx[idx], idx
