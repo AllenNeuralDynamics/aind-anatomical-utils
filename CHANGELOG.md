@@ -1,3 +1,9 @@
+## v0.3.1 (2025-10-17)
+
+### Fix
+
+- Allow target frames to be anything when computing corners
+
 ## v0.3.0 (2025-10-08)
 
 ### Feat
