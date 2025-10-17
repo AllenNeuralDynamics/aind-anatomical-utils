@@ -1,19 +1,32 @@
 #!/bin/sh
 # Run linters (default) or linters+checks without rebuilding the uv env.
 
-set -eu
+set -u
 
 main() {
   # Parse optional flag
   CHECKS=false
-  case "${1:-}" in
-    -c|--checks) CHECKS=true ;;
-  esac
+  PYTEST_ARGS=""
+  SEEN_DASHDASH=false
+
+  # Parse args: -c/--checks anywhere; collect pytest args (after -- or others)
+  for arg in "$@"; do
+    if [ "$SEEN_DASHDASH" = true ]; then
+      PYTEST_ARGS="$PYTEST_ARGS $arg"
+      continue
+    fi
+    case "$arg" in
+      -c|--checks) CHECKS=true ;;
+      --) SEEN_DASHDASH=true ;;
+      *) PYTEST_ARGS="$PYTEST_ARGS $arg" ;;  # pass unknowns to pytest
+    esac
+  done
 
   # Where your project venv lives (override with ENV_PATH=/some/venv)
   ENV_PATH="${ENV_PATH:-.venv}"
 
   # Prefer an already-active venv
+  # Choose runner: active venv, local .venv, or uv (no sync)
   if [ -n "${VIRTUAL_ENV:-}" ]; then
     BIN="$VIRTUAL_ENV/bin"
     run() { "$BIN/$@"; }
@@ -39,14 +52,23 @@ main() {
   fi
 
   # Linters
+  echo "+ ruff format"
   run ruff format
 
   if [ "$CHECKS" = true ]; then
+    echo "+ ruff check"
     run ruff check
+    echo "+ mypy"
     run mypy
+    echo "+ interrogate -v"
     run interrogate -v
+    echo "+ codespell --check-filenames"
     run codespell --check-filenames
-    run pytest --cov aind_anatomical_utils
+    echo "+ pytest --cov aind_anatomical_utils$([ -n "$PYTEST_ARGS" ] && printf ' -- %s' "$PYTEST_ARGS")"
+    # shellcheck disable=SC2086
+    run pytest --cov aind_anatomical_utils $PYTEST_ARGS
+  else
+    echo "(checks skipped; pass -c or --checks to enable)"
   fi
 }
 

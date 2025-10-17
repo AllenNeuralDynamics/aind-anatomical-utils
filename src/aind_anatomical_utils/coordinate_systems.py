@@ -29,13 +29,24 @@ class CoordSys(str, Enum):
 CS = Union[str, CoordSys]
 
 # axis mapping: (axis_index, sign)
+# axis_index here is arbitrary but must be consistent between opposite
+# directions. Same with sign.
 _AXES: Final = {
-    "L": (0, -1),
-    "R": (0, +1),
-    "P": (1, -1),
-    "A": (1, +1),
+    "L": (0, +1),
+    "R": (0, -1),
+    "P": (1, +1),
+    "A": (1, -1),
     "I": (2, -1),
     "S": (2, +1),
+}
+
+_OPPOSITE_AXES: Final = {
+    "L": "R",
+    "R": "L",
+    "P": "A",
+    "A": "P",
+    "I": "S",
+    "S": "I",
 }
 
 
@@ -211,6 +222,16 @@ def convert_coordinate_system(
     dst_coord : str
         String specifying the destination coordinate system, with each
         character belonging to the set 'R/L', 'A/P', or 'I/S'.
+    axis : int, optional
+        The axis of `arr` that corresponds to the point dimensions, by default
+        -1
+    copy : bool, optional
+        Whether to return a copy of the data even if no transformation is
+        necessary, by default True.
+    prefer_matrix : bool, optional
+        Whether to prefer using matrix multiplication for the transformation.
+        If None (default), will use matrix multiplication if the array is of
+        floating type and has more than one point.
 
     Returns
     -------

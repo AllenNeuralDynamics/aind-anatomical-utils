@@ -12,6 +12,8 @@ import numpy as np
 import SimpleITK as sitk
 from numpy.typing import NDArray
 
+from aind_anatomical_utils.anatomical_volume import AnatomicalHeader
+
 
 def transform_sitk_indices_to_physical_points(
     image: sitk.Image, index_arr: NDArray
@@ -76,3 +78,35 @@ def find_points_equal_to(
         for idx in zip(*indices)
     ]
     return np.vstack(positions)
+
+
+def regrid_axis_aligned_sitk(
+    image: sitk.Image, dst_orientation: str
+) -> sitk.Image:
+    """
+    Regrid a SimpleITK image to the specified axis-aligned orientation.
+
+    Parameters
+    ----------
+    image : sitk.Image
+        The input SimpleITK image to be regridded.
+    dst_orientation : str
+        The desired axis-aligned orientation code (e.g., 'RAS', 'LPI').
+
+    Returns
+    -------
+    sitk.Image
+        The regridded SimpleITK image in the specified orientation.
+    """
+    header = AnatomicalHeader.from_sitk(image)
+    regridded_header = header.regrid_to(dst_orientation)
+    ref_image = regridded_header.as_sitk(p_type=sitk.sitkUInt8)
+    resampled_image = sitk.Resample(
+        image,
+        ref_image,
+        sitk.Transform(),
+        sitk.sitkNearestNeighbor,
+        0.0,
+        image.GetPixelID(),
+    )
+    return resampled_image
