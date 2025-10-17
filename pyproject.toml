@@ -17,7 +17,7 @@ readme = "README.md"
 version = "0.3.1"
 
 
-dependencies = ['numpy >= 1.7, < 3', 'SimpleITK >= 2, < 3']
+dependencies = ["numpy>=1.7,<3", "SimpleITK>=2,<3", "antspyx>=0.2,<0.7"]
 
 [project.urls]
 Repository = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/"
@@ -27,10 +27,17 @@ Changelog = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/blob/m
 
 [dependency-groups]
 typing = ['mypy', 'typing_extensions >= 4.0']
-dev = [{ include-group = 'typing'}, 'codespell', 'pytest', 'pytest-cov', 'ruff', 'interrogate']
-jupyter = [{include-group = 'dev'}, 'ipykernel', 'pip']
+dev = [
+  { include-group = 'typing' },
+  'codespell',
+  'pytest',
+  'pytest-cov',
+  'ruff',
+  'interrogate',
+]
+jupyter = [{ include-group = 'dev' }, 'ipykernel', 'pip']
 docs = [
-  {include-group = 'dev'},
+  { include-group = 'dev' },
   'mkdocs',
   'mkdocs-material',
   'mkdocstrings[python]',
@@ -72,7 +79,13 @@ exclude = '''
 [tool.ruff.lint]
 extend-select = ["Q", "RUF100", "C90", "I", "F", "E", "W", "UP", "ANN", "PYI"]
 extend-ignore = ["ANN401"]
-per-file-ignores = { "tests/*.py" = ["ANN"], "docs/**/*.py" = ["ANN"], "notebooks/*.py" = ["ANN"] }
+per-file-ignores = { "tests/*.py" = [
+  "ANN",
+], "docs/**/*.py" = [
+  "ANN",
+], "notebooks/*.py" = [
+  "ANN",
+] }
 mccabe = { max-complexity = 14 }
 pydocstyle = { convention = "numpy" }
 
