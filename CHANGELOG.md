@@ -1,3 +1,9 @@
+## v0.4.0 (2025-10-18)
+
+### Feat
+
+- add function to regrid an image and header class
+
 ## v0.3.1 (2025-10-17)
 
 ### Fix
