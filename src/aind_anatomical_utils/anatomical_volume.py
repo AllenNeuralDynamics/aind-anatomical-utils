@@ -359,7 +359,9 @@ class AnatomicalHeader:
         )
 
 
-def _corner_indices(size: NDArray, outer: bool = True) -> NDArray[np.float64]:
+def _corner_indices(
+    size: NDArray[np.integer], outer: bool = True
+) -> NDArray[np.floating]:
     size = np.asarray(size, float)
     lo = -0.5 if outer else 0.0
     hi = (size - 0.5) if outer else (size - 1.0)
@@ -371,25 +373,25 @@ def _corner_indices(size: NDArray, outer: bool = True) -> NDArray[np.float64]:
 def fix_corner_compute_origin(
     size: Sequence[int],
     spacing: Sequence[float],
-    direction: NDArray[np.float64],
+    direction: NDArray[np.floating],
     target_point: Sequence[float],
     corner_code: str = "RAS",
     target_frame: str = "LPS",
     use_outer_box: bool = False,
-) -> tuple[tuple[float, float, float], NDArray[np.float64], int]:
+) -> tuple[tuple[float, float, float], NDArray[np.floating], int]:
     """
     Compute the image origin such that a specified corner of the image
     aligns with a given physical point in a specified coordinate frame.
 
     Parameters
     ----------
-    size : Sequence of int
+    size : Sequence[int]
         The image size along each spatial axis (e.g., [nx, ny, nz]).
-    spacing : Sequence of float
+    spacing : Sequence[float]
         The voxel spacing along each axis in millimeters (e.g., [sx, sy, sz]).
-    direction : NDArray[np.float64]
+    direction : NDArray[np.floating]
         3x3 direction cosine matrix (row-major) in ITK/LPS convention.
-    target_point : Sequence of float
+    target_point : Sequence[float]
         Physical coordinates (in mm) of the desired corner in the target frame.
     corner_code : str, optional
         3-letter code specifying which image corner to align (e.g., "LPI",
@@ -405,7 +407,7 @@ def fix_corner_compute_origin(
     -------
     origin_lps : tuple of float
         The computed image origin in LPS coordinates (mm).
-    chosen_corner_index : NDArray[np.float64]
+    chosen_corner_index : NDArray[np.floating]
         The continuous index (ijk) of the chosen corner.
     corner_idx_number : int
         The index (0..7) of the chosen corner.
