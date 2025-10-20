@@ -1,3 +1,9 @@
+## v0.4.1 (2025-10-20)
+
+### Fix
+
+- narrow antspyx dependency to stop breaking builds
+
 ## v0.4.0 (2025-10-18)
 
 ### Feat
