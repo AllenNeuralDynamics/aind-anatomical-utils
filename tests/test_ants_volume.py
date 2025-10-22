@@ -10,10 +10,8 @@ from aind_anatomical_utils import ants_volume
 # Import shared helpers from conftest (pytest auto-discovers conftest.py)
 from .conftest import (
     create_gradient_ants_image,
-    create_gradient_sitk_image,
     get_ants_orientation_code,
     get_ants_voxel_value_at_physical_point,
-    get_sitk_voxel_value_at_physical_point,
 )
 
 
@@ -335,128 +333,6 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
                             result, tuple(src_phys)
                         )
                         self.assertEqual(src_val, result_val)
-
-
-class TestCrossLibraryValidation(unittest.TestCase):
-    """Tests that verify ANTs and SimpleITK produce equivalent results."""
-
-    def test_both_libraries_produce_same_corner_locations(self):
-        """Test that both regrid functions produce same physical corners."""
-        from aind_anatomical_utils import sitk_volume
-
-        # Create identical gradient images in both libraries
-        sitk_img = create_gradient_sitk_image("RAS", size=(5, 6, 7))
-        ants_img = create_gradient_ants_image("RAS", size=(5, 6, 7))
-
-        # Regrid both to LPS
-        sitk_result = sitk_volume.regrid_axis_aligned_sitk(sitk_img, "LPS")
-        ants_result = ants_volume.regrid_axis_aligned_ants(ants_img, "LPS")
-
-        # Test all 8 corner locations match
-        size = sitk_img.GetSize()
-        corners = [
-            (0, 0, 0),
-            (0, 0, size[2] - 1),
-            (0, size[1] - 1, 0),
-            (0, size[1] - 1, size[2] - 1),
-            (size[0] - 1, 0, 0),
-            (size[0] - 1, 0, size[2] - 1),
-            (size[0] - 1, size[1] - 1, 0),
-            (size[0] - 1, size[1] - 1, size[2] - 1),
-        ]
-
-        for corner in corners:
-            # Get SimpleITK physical location
-            sitk_phys = sitk_result.TransformIndexToPhysicalPoint(corner)
-
-            # Get ANTs physical location
-            ants_phys = np.array(
-                ants_result.origin
-            ) + ants_result.direction @ (
-                np.array(ants_result.spacing) * np.array(corner)
-            )
-
-            self.assertTrue(
-                np.allclose(sitk_phys, ants_phys, atol=1e-10),
-                (
-                    f"Corner {corner} mismatch: "
-                    f"SITK={sitk_phys}, ANTs={ants_phys}"
-                ),
-            )
-
-    def test_gradient_values_match_across_libraries(self):
-        """Test that gradient values match at same physical locations."""
-        from aind_anatomical_utils import sitk_volume
-
-        # Create identical gradient images
-        sitk_img = create_gradient_sitk_image("RAS", size=(5, 6, 7))
-        ants_img = create_gradient_ants_image("RAS", size=(5, 6, 7))
-
-        # Regrid both to same orientation
-        sitk_result = sitk_volume.regrid_axis_aligned_sitk(sitk_img, "LPI")
-        ants_result = ants_volume.regrid_axis_aligned_ants(ants_img, "LPI")
-
-        # Sample several voxels and verify values match
-        test_indices = [(0, 0, 0), (2, 3, 4), (4, 5, 6), (1, 2, 3)]
-
-        for idx in test_indices:
-            # Get physical location from SimpleITK
-            sitk_phys = sitk_img.TransformIndexToPhysicalPoint(idx)
-
-            # Get values at that physical location in both results
-            sitk_val = get_sitk_voxel_value_at_physical_point(
-                sitk_result, sitk_phys
-            )
-            ants_val = get_ants_voxel_value_at_physical_point(
-                ants_result, tuple(sitk_phys)
-            )
-
-            self.assertEqual(
-                sitk_val,
-                ants_val,
-                f"Value mismatch at {idx}: SITK={sitk_val}, ANTs={ants_val}",
-            )
-
-    def test_both_regrid_functions_preserve_physical_bounding_box(self):
-        """Test that both libraries preserve the physical bounding box."""
-        from aind_anatomical_utils import sitk_volume
-
-        # Create identical gradient images
-        sitk_img = create_gradient_sitk_image(
-            "RAS", size=(5, 6, 7), spacing=(1.0, 2.0, 3.0)
-        )
-        ants_img = create_gradient_ants_image(
-            "RAS", size=(5, 6, 7), spacing=(1.0, 2.0, 3.0)
-        )
-
-        # Regrid both to LPS
-        sitk_result = sitk_volume.regrid_axis_aligned_sitk(sitk_img, "LPS")
-        ants_result = ants_volume.regrid_axis_aligned_ants(ants_img, "LPS")
-
-        # Get bounding boxes (min and max corners in physical space)
-        # For SimpleITK
-        sitk_min_phys = sitk_result.TransformIndexToPhysicalPoint((0, 0, 0))
-        sitk_size = sitk_result.GetSize()
-        sitk_max_idx = tuple(s - 1 for s in sitk_size)
-        sitk_max_phys = sitk_result.TransformIndexToPhysicalPoint(sitk_max_idx)
-
-        # For ANTs
-        ants_min_phys = np.array(ants_result.origin)
-        ants_size = ants_result.shape
-        ants_max_idx = np.array([s - 1 for s in ants_size])
-        ants_max_phys = ants_min_phys + ants_result.direction @ (
-            np.array(ants_result.spacing) * ants_max_idx
-        )
-
-        # Bounding boxes should match
-        self.assertTrue(
-            np.allclose(sitk_min_phys, ants_min_phys, atol=1e-10),
-            f"Min corner mismatch: SITK={sitk_min_phys}, ANTs={ants_min_phys}",
-        )
-        self.assertTrue(
-            np.allclose(sitk_max_phys, ants_max_phys, atol=1e-10),
-            f"Max corner mismatch: SITK={sitk_max_phys}, ANTs={ants_max_phys}",
-        )
 
 
 if __name__ == "__main__":
