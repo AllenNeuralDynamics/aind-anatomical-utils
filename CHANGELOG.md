@@ -1,3 +1,9 @@
+## v0.4.2 (2025-10-22)
+
+### Fix
+
+- replace custom code with library function
+
 ## v0.4.1 (2025-10-20)
 
 ### Fix
