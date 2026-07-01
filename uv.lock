@@ -31,17 +31,22 @@ wheels = [
 
 [[package]]
 name = "aind-anatomical-utils"
-version = "0.4.3"
+version = "0.5.0"
 source = { editable = "." }
 dependencies = [
-    { name = "antspyx" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.3.5", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "simpleitk" },
 ]
 
+[package.optional-dependencies]
+ants = [
+    { name = "antspyx" },
+]
+
 [package.dev-dependencies]
 dev = [
+    { name = "antspyx" },
     { name = "codespell" },
     { name = "interrogate" },
     { name = "mypy" },
@@ -50,6 +55,7 @@ dev = [
     { name = "ruff" },
 ]
 docs = [
+    { name = "antspyx" },
     { name = "codespell" },
     { name = "furo" },
     { name = "interrogate" },
@@ -68,6 +74,7 @@ docs = [
     { name = "sphinx-copybutton" },
 ]
 jupyter = [
+    { name = "antspyx" },
     { name = "codespell" },
     { name = "interrogate" },
     { name = "ipykernel" },
@@ -83,13 +90,15 @@ types = [
 
 [package.metadata]
 requires-dist = [
-    { name = "antspyx", specifier = ">=0.6.2" },
+    { name = "antspyx", marker = "extra == 'ants'", specifier = ">=0.6.2" },
     { name = "numpy", specifier = ">=1.7" },
     { name = "simpleitk", specifier = ">=2" },
 ]
+provides-extras = ["ants"]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "antspyx", specifier = ">=0.6.2" },
     { name = "codespell" },
     { name = "interrogate" },
     { name = "mypy" },
@@ -98,6 +107,7 @@ dev = [
     { name = "ruff" },
 ]
 docs = [
+    { name = "antspyx", specifier = ">=0.6.2" },
     { name = "codespell" },
     { name = "furo" },
     { name = "interrogate" },
@@ -111,6 +121,7 @@ docs = [
     { name = "sphinx-copybutton" },
 ]
 jupyter = [
+    { name = "antspyx", specifier = ">=0.6.2" },
     { name = "codespell" },
     { name = "interrogate" },
     { name = "ipykernel" },

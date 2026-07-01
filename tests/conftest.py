@@ -1,9 +1,14 @@
 """Shared test utilities for regrid functions across libraries."""
 
-import ants  # type: ignore[import-untyped]
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 import numpy as np
-from ants.core import ANTsImage
 from SimpleITK import DICOMOrientImageFilter
+
+if TYPE_CHECKING:
+    from ants.core import ANTsImage
 
 # ============================================================================
 # Shared Gradient Pattern Creation
@@ -37,6 +42,8 @@ def create_gradient_ants_image(
     ANTsImage
         Gradient test image
     """
+    import ants  # type: ignore[import-untyped]
+
     # Create gradient pattern: value = i + 100*j + 10000*k
     arr = np.zeros(size, dtype=np.int32)
     for i in range(size[0]):

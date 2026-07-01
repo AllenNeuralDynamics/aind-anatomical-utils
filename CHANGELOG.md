@@ -1,3 +1,9 @@
+## v0.5.0 (2026-06-30)
+
+### Feat
+
+- make antspyx an optional extra; install `aind-anatomical-utils[ants]` for the ANTs code paths (`ants_volume`, `AnatomicalHeader.as_ants`)
+
 ## v0.4.3 (2026-06-30)
 
 ### Fix

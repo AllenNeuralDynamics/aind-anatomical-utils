@@ -2,6 +2,10 @@
 
 import unittest
 
+import pytest
+
+pytest.importorskip("ants")
+
 import ants  # type: ignore[import-untyped]
 import numpy as np
 
