@@ -14,9 +14,16 @@ authors = [
 ]
 classifiers = ["Programming Language :: Python :: 3"]
 readme = "README.md"
-version = "0.4.3"
+version = "0.5.0"
 
-dependencies = ["numpy>=1.7", "SimpleITK>=2", "antspyx>=0.6.2"]
+dependencies = ["numpy>=1.7", "SimpleITK>=2"]
+
+[project.optional-dependencies]
+# ANTs (antspyx) is a heavy, resolution-fragile dependency used only by the
+# ants_volume module and AnatomicalHeader.as_ants. Consumers that need those
+# paths install `aind-anatomical-utils[ants]`; everyone else sheds antspyx and
+# its scipy/scikit-image/ITK subtree entirely.
+ants = ["antspyx>=0.6.2"]
 
 [project.urls]
 Repository = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/"
@@ -25,7 +32,9 @@ Changelog = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/blob/m
 
 [dependency-groups]
 types = ["mypy"]
-dev = [{ include-group = "types" }, "codespell", "pytest", "pytest-cov", "ruff", "interrogate"]
+# antspyx is kept in the dev group (not a consumer dependency) so this repo's
+# own tests still exercise the ANTs code paths; the ANTs tests importorskip it.
+dev = [{ include-group = "types" }, "codespell", "pytest", "pytest-cov", "ruff", "interrogate", "antspyx>=0.6.2"]
 jupyter = [{ include-group = "dev" }, "ipykernel", "pip"]
 docs = [
   { include-group = "dev" },
@@ -47,7 +56,8 @@ extend-exclude = ["scratch"]
 [tool.ruff.lint]
 extend-select = ["Q", "RUF100", "C90", "I", "F", "E", "W", "D", "UP", "ANN", "PYI"]
 extend-ignore = ["ANN401"]  # Skip self/cls type annotations
-per-file-ignores = { "tests/*.py" = ["ANN", "D"] }
+# E402: ANTs test modules run pytest.importorskip("ants") before importing ants.
+per-file-ignores = { "tests/*.py" = ["ANN", "D", "E402"] }
 mccabe = { max-complexity = 14 }
 pydocstyle = { convention = "numpy" }
 

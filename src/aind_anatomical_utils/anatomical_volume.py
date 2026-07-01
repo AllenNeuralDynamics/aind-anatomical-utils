@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from itertools import product
 from typing import TYPE_CHECKING, cast
 
-import ants  # type: ignore[import-untyped]
 import numpy as np
 import SimpleITK as sitk
 from numpy.typing import DTypeLike, NDArray
@@ -194,6 +193,13 @@ class AnatomicalHeader:
             A new image with this :class:`Header`'s origin, spacing, direction,
             and size set. Pixel type is ``unsigned char``.
         """
+        try:
+            import ants  # type: ignore[import-untyped]
+        except ModuleNotFoundError as e:  # pragma: no cover
+            raise ModuleNotFoundError(
+                "AnatomicalHeader.as_ants requires the 'ants' extra: pip install 'aind-anatomical-utils[ants]'"
+            ) from e
+
         arr = np.zeros(self.size_ijk, dtype=np_eltype)
         img = ants.from_numpy(
             arr,
