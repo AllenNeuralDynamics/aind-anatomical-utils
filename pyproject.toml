@@ -17,7 +17,7 @@ readme = "README.md"
 version = "0.4.2"
 
 
-dependencies = ["numpy>=1.7,<3", "SimpleITK>=2,<3", "antspyx>=0.6,<0.7"]
+dependencies = ["numpy>=1.7", "SimpleITK>=2", "antspyx>=0.6.2"]
 
 [project.urls]
 Repository = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/"
