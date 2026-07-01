@@ -1,9 +1,9 @@
-"""Functions for working with slicer files"""
+"""Functions for working with slicer files."""
 
 import json
 import logging
 import re
-from typing import IO, Optional, Union
+from typing import IO, Any
 
 import numpy as np
 import SimpleITK as sitk
@@ -20,10 +20,10 @@ logger = logging.getLogger(__name__)
 
 
 def extract_control_points(
-    json_data: dict,
-) -> tuple[NDArray, list[str], str]:
+    json_data: dict[str, Any],
+) -> tuple[NDArray[np.float64], list[str], str]:
     """
-    Extract points and names from slicer json dict
+    Extract points and names from slicer json dict.
 
     Parameters
     ----------
@@ -49,10 +49,9 @@ def extract_control_points(
     return np.array(pos), labels, coord_str
 
 
-def find_seg_nrrd_header_segment_info(header: dict) -> dict:
+def find_seg_nrrd_header_segment_info(header: dict[str, str]) -> dict[str, int]:
     """
-    parse keys of slicer created dict to find segment names and values
-
+    Parse keys of slicer created dict to find segment names and values.
 
     Parameters
     ----------
@@ -74,10 +73,9 @@ def find_seg_nrrd_header_segment_info(header: dict) -> dict:
     return segment_info
 
 
-def get_segmented_labels(label_vol: sitk.Image) -> dict:
+def get_segmented_labels(label_vol: sitk.Image) -> dict[str, int]:
     """
-    Extract metadata from the implant volume and return the segmentation label
-    dictionary.
+    Extract metadata from the implant volume and return the segmentation label dictionary.
 
     Parameters
     ----------
@@ -90,23 +88,21 @@ def get_segmented_labels(label_vol: sitk.Image) -> dict:
         A dictionary mapping segmentation labels to their corresponding values
         in the volume.
     """
-    metadata_dict = {
-        k: label_vol.GetMetaData(k) for k in label_vol.GetMetaDataKeys()
-    }
+    metadata_dict = {k: label_vol.GetMetaData(k) for k in label_vol.GetMetaDataKeys()}
     label_dict = find_seg_nrrd_header_segment_info(metadata_dict)
     return label_dict
 
 
 def load_segmentation_points(
-    label_vol: Union[sitk.Image, str],
-    order: Optional[list[str]] = None,
-    image: Optional[sitk.Image] = None,
-) -> Union[
-    tuple[NDArray, NDArray],
-    tuple[NDArray, NDArray, NDArray],
-]:
+    label_vol: sitk.Image | str,
+    order: list[str] | None = None,
+    image: sitk.Image | None = None,
+) -> (
+    tuple[NDArray[np.floating], NDArray[np.integer]]
+    | tuple[NDArray[np.floating], NDArray[np.integer], NDArray[np.floating]]
+):
     """
-    Load segmentation points from a 3D Slicer generated .seg.nrrd file
+    Load segmentation points from a 3D Slicer generated .seg.nrrd file.
 
     Note that, because this is effectively an image loader, it is excluded from
     coverage tests
@@ -150,9 +146,7 @@ def load_segmentation_points(
     positions = []
     if image is None:
         for label_ndx, label in enumerate(order):
-            these_positions = find_points_equal_to(
-                label_vol, label_dict[label]
-            )
+            these_positions = find_points_equal_to(label_vol, label_dict[label])
             label_ndxs = np.full(these_positions.shape[0], label_ndx)
             positions.append(these_positions)
             labels.append(label_ndxs)
@@ -165,9 +159,7 @@ def load_segmentation_points(
             val = label_dict[label]
             ndxs = find_indices_equal_to(label_arr, val)
             sitk_ndxs = ndxs[:, ::-1]
-            these_positions = transform_sitk_indices_to_physical_points(
-                label_vol, sitk_ndxs
-            )
+            these_positions = transform_sitk_indices_to_physical_points(label_vol, sitk_ndxs)
             label_ndxs = np.full(these_positions.shape[0], label_ndx)
             np_ndxs = tuple(ndxs.T)
             these_weights = img_arr[np_ndxs]
@@ -181,15 +173,16 @@ def load_segmentation_points(
         )
 
 
-def markup_json_to_numpy(filename: str) -> tuple[NDArray, list[str], str]:
+def markup_json_to_numpy(filename: str) -> tuple[NDArray[np.float64], list[str], str]:
     """
-    Extract control points from a 3D Slicer generated markup JSON file
+    Extract control points from a 3D Slicer generated markup JSON file.
 
     Parameters
     ----------
     filename : string
         filename to open. Must be .json
         .mrk.json is ok
+
     Returns
     -------
     pts, names - numpy.ndarray (N x 3) of point positions and list of
@@ -201,9 +194,9 @@ def markup_json_to_numpy(filename: str) -> tuple[NDArray, list[str], str]:
     return extract_control_points(data)
 
 
-def markup_json_to_dict(filename: str) -> tuple[dict[str, NDArray], str]:
+def markup_json_to_dict(filename: str) -> tuple[dict[str, NDArray[np.float64]], str]:
     """
-    Extract control points from a 3D Slicer generated markup JSON file
+    Extract control points from a 3D Slicer generated markup JSON file.
 
     Parameters
     ----------
@@ -224,23 +217,15 @@ def markup_json_to_dict(filename: str) -> tuple[dict[str, NDArray], str]:
 
 def create_slicer_fcsv(
     filename: str,
-    pts_dict: Union[
-        dict[str, NDArray],
-        dict[str, list[int]],
-        dict[str, list[float]],
-    ],
+    pts_dict: dict[str, NDArray[np.float64]] | dict[str, list[int]] | dict[str, list[float]],
     direction: str = "LPS",
 ) -> None:
-    """
-    Save fCSV file that is slicer readable.
-    """
+    """Save fCSV file that is slicer readable."""
     # Create output file
     with open(filename, "w+") as f:
         f.write("# Markups fiducial file version = 4.11\n")
         f.write(f"# CoordinateSystem = {direction}\n")
-        f.write(
-            "# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID\n"  # noqa: E501
-        )
+        f.write("# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID\n")
 
         for pt_no, key in enumerate(pts_dict.keys()):
             x, y, z = pts_dict[key]
@@ -248,14 +233,11 @@ def create_slicer_fcsv(
             # Remove commas, newlines, carriage returns, tabs, quotes, and
             # leading/trailing whitespace
             key = re.sub(r'[\r\n,\'"\\]+', "", key.strip())
-            f.write(
-                f"{pt_no + 1:d},{x:f},{y:f},{z:f},0,0,0,1,1,1,0,"
-                f"{key!s},,vtkMRMLScalarVolumeNode1\n"
-            )
+            f.write(f"{pt_no + 1:d},{x:f},{y:f},{z:f},0,0,0,1,1,1,0,{key!s},,vtkMRMLScalarVolumeNode1\n")
 
 
-def _parse_slicer_fcsv_header(file: IO) -> tuple[str, str, int, list[int]]:
-    "Parse the header of a slicer fcsv file, returning the last line read"
+def _parse_slicer_fcsv_header(file: IO[str]) -> tuple[str, str, int, list[int]]:
+    """Parse the header of a slicer fcsv file, returning the last line read."""
     line = file.readline()
     source_coordinate_system = None
     column_headers = []
@@ -287,9 +269,10 @@ def _parse_slicer_fcsv_header(file: IO) -> tuple[str, str, int, list[int]]:
 def read_slicer_fcsv(
     filename: str,
     direction: str = "LPS",
-) -> dict[str, NDArray]:
+) -> dict[str, NDArray[np.float64]]:
     """
     Read fscv into dictionary.
+
     While reading, points will be converted to the specified direction.
 
     Parameters
@@ -316,21 +299,15 @@ def read_slicer_fcsv(
     point_dictionary = {}
 
     with open(filename) as file:
-        line, source_coordinate_system, label_ndx, coord_ndxs = (
-            _parse_slicer_fcsv_header(file)
-        )
+        line, source_coordinate_system, label_ndx, coord_ndxs = _parse_slicer_fcsv_header(file)
         need_conversion = source_coordinate_system != direction
 
         while line:
             point_parts = line.strip().split(",")
             point_key = point_parts[label_ndx]
-            point_values = np.array(
-                [float(point_parts[i]) for i in coord_ndxs]
-            )
+            point_values = np.array([float(point_parts[i]) for i in coord_ndxs])
             if need_conversion:
-                point_values = convert_coordinate_system(
-                    point_values, source_coordinate_system, direction
-                )
+                point_values = convert_coordinate_system(point_values, source_coordinate_system, direction)
             point_dictionary[point_key] = point_values
             line = file.readline()
 

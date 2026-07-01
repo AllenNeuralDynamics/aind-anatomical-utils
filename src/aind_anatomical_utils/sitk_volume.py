@@ -1,5 +1,5 @@
 """
-Code to handle sitk volume loading and rotating
+Code to handle sitk volume loading and rotating.
 
 SimpleITK example code is under Apache License, see:
 https://github.com/SimpleITK/TUTORIAL/blob/main/LICENSE
@@ -14,9 +14,9 @@ from numpy.typing import NDArray
 
 
 def transform_sitk_indices_to_physical_points(
-    image: sitk.Image, index_arr: NDArray
+    image: sitk.Image, index_arr: NDArray[np.integer]
 ) -> NDArray[np.floating]:
-    """Transforms indices of image to physical points
+    """Transform indices of image to physical points.
 
     For a SimpleITK image `image` and a list of indices `index_arr`, transform
     each index to a physical point.
@@ -36,18 +36,13 @@ def transform_sitk_indices_to_physical_points(
     npt = index_arr.shape[0]
     for pt_no in range(npt):
         ndx = tuple(map(lambda x: x.item(), index_arr[pt_no, :]))
-        position_arr[pt_no, :] = image.TransformContinuousIndexToPhysicalPoint(
-            ndx
-        )
+        position_arr[pt_no, :] = image.TransformContinuousIndexToPhysicalPoint(ndx)
     return position_arr
 
 
-def find_points_equal_to(
-    image: sitk.Image, label_value: int | None = None
-) -> NDArray[np.floating]:
+def find_points_equal_to(image: sitk.Image, label_value: int | None = None) -> NDArray[np.floating]:
     """
-    Get the physical positions of all voxels in the implant volume that match
-    the given label value.
+    Get the physical positions of all voxels in the implant volume that match the given label value.
 
     Parameters
     ----------
@@ -71,8 +66,5 @@ def find_points_equal_to(
     if len(indices[0]) == 0:
         return np.empty((0, implant_vol_arr.ndim))
 
-    positions = [
-        image.TransformIndexToPhysicalPoint(tuple([int(x) for x in idx[::-1]]))
-        for idx in zip(*indices)
-    ]
+    positions = [image.TransformIndexToPhysicalPoint(tuple([int(x) for x in idx[::-1]])) for idx in zip(*indices)]
     return np.vstack(positions)

@@ -1,11 +1,11 @@
-"""Module to deal with coordinate systems"""
+"""Module to deal with coordinate systems."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
 from functools import cache
-from typing import TYPE_CHECKING, Final, Union
+from typing import TYPE_CHECKING, Final
 
 import numpy as np
 
@@ -16,6 +16,8 @@ if TYPE_CHECKING:
 
 
 class CoordSys(str, Enum):
+    """Enumeration of the eight axis-aligned anatomical coordinate systems."""
+
     RAS = "RAS"
     LAS = "LAS"
     RPS = "RPS"
@@ -26,7 +28,7 @@ class CoordSys(str, Enum):
     LPI = "LPI"
 
 
-CS = Union[str, CoordSys]
+CS = str | CoordSys
 
 # axis mapping: (axis_index, sign)
 # axis_index here is arbitrary but must be consistent between opposite
@@ -55,20 +57,21 @@ def _norm_code(code: CS) -> str:
 
 
 def _validate_code(code: str) -> None:
-    """Validates a coordinate system string.
+    """Validate a coordinate system string.
 
     Ensures that each character in the coordinate system string belongs to the
     set 'R/L', 'A/P', or 'I/S' and that no axis or its opposite is repeated.
 
     Parameters
     ----------
-    coord : str
+    code : str
         The coordinate system string to validate.
 
-    Returns
-    -------
-    Set[str]
-        A set of unique directions in the coordinate system string.
+    Raises
+    ------
+    ValueError
+        If a character is not a valid direction, or if an axis (or its
+        opposite) is repeated in `code`.
     """
     seen_axes = set()
     for c in code:
@@ -82,6 +85,8 @@ def _validate_code(code: str) -> None:
 
 @dataclass(frozen=True)
 class Orientation:
+    """Permutation, sign, and matrix describing how to reorient between two coordinate systems."""
+
     __slots__ = ("perm", "sign", "R", "det")
     perm: NDArray[np.intp]  # (N,) permutation indices
     sign: NDArray[np.int8]  # (N,) ±1
@@ -117,15 +122,13 @@ def _orientation(src: str, dst: str) -> Orientation:
                 R[i, j] = float(sign[i])
                 break
         else:
-            raise ValueError(
-                f"Destination direction '{d}' has no match in source '{src}'"
-            )
+            raise ValueError(f"Destination direction '{d}' has no match in source '{src}'")
     det = float(round(np.linalg.det(R)))  # should be ±1
     return Orientation(perm=perm, sign=sign, R=R, det=det)
 
 
 def coordinate_transform_matrix(src: CS, dst: CS) -> NDArray[np.float64]:
-    """Return orthonormal matrix R mapping points in src->dst
+    """Return orthonormal matrix R mapping points in src->dst.
 
     (row-major: p_dst = p_src @ R.T).
     """
@@ -133,9 +136,7 @@ def coordinate_transform_matrix(src: CS, dst: CS) -> NDArray[np.float64]:
     return _orientation(src_n, dst_n).R
 
 
-def find_coordinate_perm_and_flips(
-    src: CS, dst: CS
-) -> tuple[NDArray[np.intp], NDArray[np.int8]]:
+def find_coordinate_perm_and_flips(src: CS, dst: CS) -> tuple[NDArray[np.intp], NDArray[np.int8]]:
     """Determine how to convert between coordinate systems.
 
     This function takes a source `src` and destination `dst` string specifying
@@ -186,15 +187,15 @@ def find_coordinate_perm_and_flips(
 
 
 def convert_coordinate_system(
-    arr: NDArray,
+    arr: NDArray[np.floating],
     src_coord: CS,
     dst_coord: CS,
     *,
     axis: int = -1,
     copy: bool = True,
     prefer_matrix: bool | None = None,
-) -> NDArray:
-    """Converts points in one anatomical coordinate system to another.
+) -> NDArray[np.floating]:
+    """Convert points in one anatomical coordinate system to another.
 
     This will permute and multiply the NxM input array `arr` so that N
     M-dimensional points in the coordinate system specified by `src_coord` will
@@ -272,8 +273,7 @@ def reorient_mesh_vertices_faces(
     src: CS,
     dst: CS,
 ) -> tuple[NDArray[np.floating], NDArray[np.integer]]:
-    """Reorient mesh vertices from src->dst and flip face winding if
-    reflection."""
+    """Reorient mesh vertices from src->dst and flip face winding if reflection."""
     src_n, dst_n = _norm_code(src), _norm_code(dst)
     orientation = _orientation(src_n, dst_n)
     R = orientation.R

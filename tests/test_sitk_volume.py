@@ -49,9 +49,7 @@ def create_test_image_with_orientation(
     img.SetOrigin(origin)
     img.SetSpacing(spacing)
 
-    dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-        coord_system
-    )
+    dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(coord_system)
     img.SetDirection(dir_tuple)
 
     return img
@@ -84,9 +82,7 @@ def create_gradient_image(
     sitk.Image
         Gradient test image
     """
-    img = create_test_image_with_orientation(
-        coord_system, size, spacing, origin, pixel_type=sitk.sitkInt32
-    )
+    img = create_test_image_with_orientation(coord_system, size, spacing, origin, pixel_type=sitk.sitkInt32)
 
     # Create gradient pattern
     arr = np.zeros(size[::-1], dtype=np.int32)  # sitk uses ZYX ordering
@@ -102,9 +98,7 @@ def create_gradient_image(
     return img_with_data
 
 
-def get_voxel_value_at_physical_point(
-    img: sitk.Image, physical_point: tuple[float, float, float]
-) -> float:
+def get_voxel_value_at_physical_point(img: sitk.Image, physical_point: tuple[float, float, float]) -> float:
     """Get the voxel value at a physical point using nearest neighbor.
 
     Parameters
@@ -120,9 +114,7 @@ def get_voxel_value_at_physical_point(
         Voxel value at that location
     """
     # Transform physical point to continuous index
-    continuous_idx = img.TransformPhysicalPointToContinuousIndex(
-        physical_point
-    )
+    continuous_idx = img.TransformPhysicalPointToContinuousIndex(physical_point)
     # Round to nearest integer index
     idx = tuple(int(round(x)) for x in continuous_idx)
 
@@ -186,9 +178,7 @@ class SITKTest(unittest.TestCase):
     def test_transform_sitk_indices_to_physical_points(self) -> None:
         simg = sitk.Image(256, 128, 64, sitk.sitkUInt8)
         for ndxs, answer in self.test_index_translation_sets:
-            received = sitk_volume.transform_sitk_indices_to_physical_points(
-                simg, ndxs
-            )
+            received = sitk_volume.transform_sitk_indices_to_physical_points(simg, ndxs)
             self.assertTrue(np.allclose(answer, received))
 
 

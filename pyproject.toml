@@ -1,12 +1,12 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "aind-anatomical-utils"
 description = "Tools to work with anatomically-aware files"
 license = "MIT"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
   { name = "Allen Institute for Neural Dynamics" },
   { name = "Galen Lynch", email = "galen@galenlynch.com" },
@@ -16,7 +16,6 @@ classifiers = ["Programming Language :: Python :: 3"]
 readme = "README.md"
 version = "0.4.2"
 
-
 dependencies = ["numpy>=1.7", "SimpleITK>=2", "antspyx>=0.6.2"]
 
 [project.urls]
@@ -24,93 +23,40 @@ Repository = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/"
 Issues = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/issues"
 Changelog = "https://github.com/AllenNeuralDynamics/aind-anatomical-utils/blob/main/CHANGELOG.md"
 
-
 [dependency-groups]
-typing = ['mypy', 'typing_extensions >= 4.0']
-dev = [
-  { include-group = 'typing' },
-  'codespell',
-  'pytest',
-  'pytest-cov',
-  'ruff',
-  'interrogate',
-]
-jupyter = [{ include-group = 'dev' }, 'ipykernel', 'pip']
+types = ["mypy"]
+dev = [{ include-group = "types" }, "codespell", "pytest", "pytest-cov", "ruff", "interrogate"]
+jupyter = [{ include-group = "dev" }, "ipykernel", "pip"]
 docs = [
-  { include-group = 'dev' },
-  'mkdocs',
-  'mkdocs-material',
-  'mkdocstrings[python]',
-  'pymdown-extensions',
-  'ruff',
+  { include-group = "dev" },
+  "sphinx>=5.0",
+  "sphinx-autodoc-typehints",
+  "sphinx-copybutton",
+  "myst-parser",
+  "furo",
 ]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-
-[tool.setuptools.package-data]
-"aind_anatomical_utils" = ["py.typed"]
+[tool.hatch.build.targets.wheel]
+packages = ["src/aind_anatomical_utils"]
 
 [tool.ruff]
-line-length = 79
-target-version = 'py39'
-
-[tool.black]
-line-length = 79
-target-version = ['py39']
-exclude = '''
-
-(
-  /(
-      \.eggs         # exclude a few common directories in the
-    | \.git          # root of the project
-    | \.hg
-    | \.mypy_cache
-    | \.tox
-    | \.venv
-    | _build
-    | build
-    | dist
-  )/
-  | .gitignore
-)
-'''
+line-length = 120
+target-version = "py310"
+extend-exclude = ["scratch"]
 
 [tool.ruff.lint]
-extend-select = ["Q", "RUF100", "C90", "I", "F", "E", "W", "UP", "ANN", "PYI"]
-extend-ignore = ["ANN401"]
-per-file-ignores = { "tests/*.py" = [
-  "ANN",
-], "docs/**/*.py" = [
-  "ANN",
-], "notebooks/*.py" = [
-  "ANN",
-] }
+extend-select = ["Q", "RUF100", "C90", "I", "F", "E", "W", "D", "UP", "ANN", "PYI"]
+extend-ignore = ["ANN401"]  # Skip self/cls type annotations
+per-file-ignores = { "tests/*.py" = ["ANN", "D"] }
 mccabe = { max-complexity = 14 }
 pydocstyle = { convention = "numpy" }
 
 [tool.codespell]
-skip = '.git,*.pdf,*.svg,./bonsai,*.bonsai,./docs/_build,uv.lock,./doc_template'
-ignore-words-list = 'nd'
+skip = ".git,*.pdf,*.svg,./docs/build,uv.lock,scratch"
 
 [tool.pytest.ini_options]
 addopts = "--strict-markers --tb=short --cov=src --cov-report=term-missing --cov-fail-under=0"
 testpaths = ["tests"]
-python_files = ["test_*.py"]
-python_classes = ["Test*"]
-python_functions = ["test_*"]
-
-[tool.coverage.run]
-omit = ["*__init__*"]
-source = ["src"]
-
-[tool.coverage.report]
-exclude_lines = ["if __name__ == .__main__.:", "# pragma: no cover"]
-fail_under = 30
-
-[tool.isort]
-line_length = 79
-profile = "black"
 
 [tool.interrogate]
 ignore-init-method = true
@@ -122,36 +68,31 @@ exclude = [
   "tests",
   "docs",
   "build",
-  "setup.py",
   "examples",
   "site",
+  "scratch",
+  ".venv",
 ]
 
 [tool.commitizen]
 version_provider = "pep621"
-version_files = ["src/aind_anatomical_utils/__init__.py:__version__"]
 update_changelog_on_bump = true
 tag_format = "v$version"
 major_version_zero = true
 
+
 [tool.mypy]
 files = ["src/aind_anatomical_utils"]
-python_version = "3.9"
-warn_return_any = true
-warn_unused_configs = true
-disallow_untyped_defs = true
-disallow_incomplete_defs = true
-check_untyped_defs = true
-disallow_untyped_decorators = true
-no_implicit_optional = true
-warn_redundant_casts = true
-warn_unused_ignores = true
-warn_no_return = true
-warn_unreachable = true
-strict_equality = true
+strict = true
 show_error_codes = true
+exclude = ["scratch"]
+# SimpleITK and ANTs (antspyx) are C-extension libraries that ship no type
+# stubs, so calls into them are untyped. Allow those calls rather than
+# scattering `type: ignore[no-untyped-call]` across every call site.
+disallow_untyped_calls = false
 
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
 disallow_incomplete_defs = false
+

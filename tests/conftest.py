@@ -45,15 +45,11 @@ def create_gradient_ants_image(
                 arr[i, j, k] = i + 100 * j + 10000 * k
 
     # Get direction matrix for orientation
-    dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-        coord_system
-    )
+    dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(coord_system)
     direction = np.array(dir_tuple).reshape(3, 3)
 
     # Create ANTs image with correct header
-    img = ants.from_numpy(
-        arr, origin=origin, spacing=spacing, direction=direction
-    )
+    img = ants.from_numpy(arr, origin=origin, spacing=spacing, direction=direction)
 
     return img
 
@@ -63,9 +59,7 @@ def create_gradient_ants_image(
 # ============================================================================
 
 
-def get_ants_voxel_value_at_physical_point(
-    img: ANTsImage, physical_point: tuple[float, float, float]
-) -> float:
+def get_ants_voxel_value_at_physical_point(img: ANTsImage, physical_point: tuple[float, float, float]) -> float:
     """Get the voxel value at a physical point using nearest neighbor.
 
     Parameters

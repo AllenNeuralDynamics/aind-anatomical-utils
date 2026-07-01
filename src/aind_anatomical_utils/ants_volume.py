@@ -1,3 +1,5 @@
+"""Functions for working with ANTs images."""
+
 from __future__ import annotations
 
 import ants  # type: ignore[import-untyped]
@@ -10,9 +12,7 @@ from aind_anatomical_utils.coordinate_systems import (
 )
 
 
-def regrid_axis_aligned_ants(
-    image: ANTsImage, dst_orientation: str
-) -> ANTsImage:
+def regrid_axis_aligned_ants(image: ANTsImage, dst_orientation: str) -> ANTsImage:
     """
     Regrid an ANTs image to the specified axis-aligned orientation.
 
@@ -32,16 +32,12 @@ def regrid_axis_aligned_ants(
     # Ants will reverse the numpy array axes, but it is undone when creating
     # the ANTs image, so we can ignore it
     image_arr = image.numpy()
-    perms, signs = find_coordinate_perm_and_flips(
-        src=header.orientation_code(), dst=dst_orientation
-    )
+    perms, signs = find_coordinate_perm_and_flips(src=header.orientation_code(), dst=dst_orientation)
     flips = np.array(signs == -1, dtype=bool)
     axes_to_flip = np.nonzero(flips)[0]
     image_arr_regridded = np.permute_dims(image_arr, perms)
     if len(axes_to_flip) > 0:
-        image_arr_regridded = np.flip(
-            image_arr_regridded, axis=tuple(axes_to_flip)
-        )
+        image_arr_regridded = np.flip(image_arr_regridded, axis=tuple(axes_to_flip))
     regridded_header = header.regrid_to(dst_orientation)
     regridded_img = ants.from_numpy(image_arr_regridded)
     regridded_header.update_ants(regridded_img)

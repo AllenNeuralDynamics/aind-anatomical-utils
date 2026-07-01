@@ -1,6 +1,4 @@
-"""
-Functions for working with the headers of anatomical volumes.
-"""
+"""Functions for working with the headers of anatomical volumes."""
 
 from __future__ import annotations
 
@@ -80,8 +78,7 @@ class AnatomicalHeader:
 
     def orientation_code(self) -> str:
         """
-        Get the anatomical orientation code (e.g., 'RAS', 'LPI') of this
-        header.
+        Get the anatomical orientation code (e.g., 'RAS', 'LPI') of this header.
 
         Returns
         -------
@@ -89,11 +86,7 @@ class AnatomicalHeader:
             The 3-letter anatomical orientation code corresponding to the
             direction matrix of this header.
         """
-        direction_code = (
-            sitk.DICOMOrientImageFilter.GetOrientationFromDirectionCosines(
-                self.direction_tuple()
-            )
-        )
+        direction_code = sitk.DICOMOrientImageFilter.GetOrientationFromDirectionCosines(self.direction_tuple())
         direction_code = cast(str, direction_code)
         return direction_code
 
@@ -321,17 +314,9 @@ class AnatomicalHeader:
         if not self.is_axis_aligned():
             raise ValueError("Source header must be axis-aligned.")
 
-        src_code = (
-            sitk.DICOMOrientImageFilter.GetOrientationFromDirectionCosines(
-                tuple(self.direction.flatten())
-            )
-        )
+        src_code = sitk.DICOMOrientImageFilter.GetOrientationFromDirectionCosines(tuple(self.direction.flatten()))
         perm, _ = find_coordinate_perm_and_flips(src_code, dst_coord_system)
-        dir_tup_new = (
-            sitk.DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-                dst_coord_system
-            )
-        )
+        dir_tup_new = sitk.DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(dst_coord_system)
         D_new = np.asarray(dir_tup_new).reshape(3, 3)
         size_new = tuple(self.size_ijk[i] for i in perm)
         size_new = cast(tuple[int, int, int], size_new)
@@ -340,9 +325,7 @@ class AnatomicalHeader:
 
         # The corner code of the original origin is the opposite of the
         # src_code
-        old_origin_corner_code = "".join(
-            _OPPOSITE_AXES[src_code[i]] for i in range(3)
-        )
+        old_origin_corner_code = "".join(_OPPOSITE_AXES[src_code[i]] for i in range(3))
         origin_new, _, _ = fix_corner_compute_origin(
             size=size_new,
             spacing=spacing_new,
@@ -359,15 +342,11 @@ class AnatomicalHeader:
         )
 
 
-def _corner_indices(
-    size: NDArray[np.integer], outer: bool = True
-) -> NDArray[np.floating]:
+def _corner_indices(size: NDArray[np.integer], outer: bool = True) -> NDArray[np.floating]:
     size = np.asarray(size, float)
     lo = -0.5 if outer else 0.0
     hi = (size - 0.5) if outer else (size - 1.0)
-    return np.array(
-        list(product([lo, hi[0]], [lo, hi[1]], [lo, hi[2]])), float
-    )
+    return np.array(list(product([lo, hi[0]], [lo, hi[1]], [lo, hi[2]])), float)
 
 
 def fix_corner_compute_origin(
@@ -380,8 +359,10 @@ def fix_corner_compute_origin(
     use_outer_box: bool = False,
 ) -> tuple[tuple[float, float, float], NDArray[np.floating], int]:
     """
-    Compute the image origin such that a specified corner of the image
-    aligns with a given physical point in a specified coordinate frame.
+    Compute the image origin so a specified corner of the image aligns with a target point.
+
+    The origin is computed such that a specified corner of the image aligns
+    with a given physical point in a specified coordinate frame.
 
     Parameters
     ----------
@@ -421,9 +402,7 @@ def fix_corner_compute_origin(
     # Normalize to 3D
     size_arr = np.array(list(size) + [1, 1, 1])[:3].astype(float)
     spacing_arr = np.array(list(spacing) + [1, 1, 1])[:3].astype(float)
-    target_point_arr = np.array(list(target_point) + [1, 1, 1])[:3].astype(
-        float
-    )
+    target_point_arr = np.array(list(target_point) + [1, 1, 1])[:3].astype(float)
     D = np.asarray(direction, float).reshape(3, 3)
 
     # All 8 corners in continuous index space and their LPS offsets from origin
@@ -442,9 +421,7 @@ def fix_corner_compute_origin(
     if target_frame_n == "LPS":
         target_lps = target_point_arr
     else:
-        target_lps = convert_coordinate_system(
-            target_point_arr, target_frame, "LPS"
-        )
+        target_lps = convert_coordinate_system(target_point_arr, target_frame, "LPS")
     origin_lps = target_lps - corner_offset_lps
 
     return tuple(origin_lps), corners_idx[idx], idx

@@ -11,9 +11,7 @@ from SimpleITK import DICOMOrientImageFilter
 from aind_anatomical_utils import anatomical_volume as av
 
 
-def verify_origin_correctness(
-    origin, direction, spacing, corner_idx, target_point_lps, tolerance=1e-10
-):
+def verify_origin_correctness(origin, direction, spacing, corner_idx, target_point_lps, tolerance=1e-10):
     """
     Verify that origin + (corner_idx * spacing) @ direction.T ≈ target_point.
 
@@ -44,9 +42,7 @@ def verify_origin_correctness(
     target_arr = np.asarray(target_point_lps, float)
 
     # ITK formula: physical_point = origin + (index * spacing) @ direction.T
-    computed_target = (
-        origin_arr + (corner_idx_arr * spacing_arr) @ direction_arr.T
-    )
+    computed_target = origin_arr + (corner_idx_arr * spacing_arr) @ direction_arr.T
 
     return np.allclose(computed_target, target_arr, atol=tolerance)
 
@@ -121,9 +117,7 @@ class TestAnatomicalHeader(unittest.TestCase):
         """Test Header creation with custom size."""
         sitk_image = sitk.Image([100, 200, 50], sitk.sitkUInt8)
         custom_size = (75, 75, 75)
-        header = av.AnatomicalHeader.from_sitk(
-            sitk_image, size_ijk=custom_size
-        )
+        header = av.AnatomicalHeader.from_sitk(sitk_image, size_ijk=custom_size)
 
         assert header.size_ijk == custom_size
 
@@ -173,9 +167,7 @@ class TestAnatomicalHeader(unittest.TestCase):
     def test_orientation_code_RAS(self):
         """Test orientation code for RAS orientation."""
         # RAS direction matrix
-        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-            "RAS"
-        )
+        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation("RAS")
         direction = np.array(dir_tuple).reshape(3, 3)
 
         header = av.AnatomicalHeader(
@@ -193,17 +185,9 @@ class TestAnatomicalHeader(unittest.TestCase):
         orientations = ["RAS", "LPS", "RPI", "LAI", "RPS", "LAS", "RAI", "LPI"]
 
         for expected_orient in orientations:
-            with (
-                pytest.raises(Exception)
-                if False
-                else self.subTest(orientation=expected_orient)
-            ):
+            with pytest.raises(Exception) if False else self.subTest(orientation=expected_orient):
                 # Get direction matrix for this orientation
-                dir_tuple = (
-                    DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-                        expected_orient
-                    )
-                )
+                dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(expected_orient)
                 direction = np.array(dir_tuple).reshape(3, 3)
 
                 header = av.AnatomicalHeader(
@@ -214,27 +198,19 @@ class TestAnatomicalHeader(unittest.TestCase):
                 )
 
                 orientation = header.orientation_code()
-                assert orientation == expected_orient, (
-                    f"Expected {expected_orient}, got {orientation}"
-                )
+                assert orientation == expected_orient, f"Expected {expected_orient}, got {orientation}"
 
     def test_orientation_code_from_actual_sitk_image(self):
         """Test that orientation code matches SimpleITK's own computation."""
         # Create a SimpleITK image with RPI orientation
         sitk_img = sitk.Image([10, 20, 30], sitk.sitkUInt8)
-        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-            "RPI"
-        )
+        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation("RPI")
         sitk_img.SetDirection(dir_tuple)
         sitk_img.SetOrigin((5.0, 10.0, 15.0))
         sitk_img.SetSpacing((1.0, 1.0, 2.0))
 
         # Get orientation from SimpleITK
-        sitk_orientation = (
-            DICOMOrientImageFilter.GetOrientationFromDirectionCosines(
-                sitk_img.GetDirection()
-            )
-        )
+        sitk_orientation = DICOMOrientImageFilter.GetOrientationFromDirectionCosines(sitk_img.GetDirection())
 
         # Get orientation from our Header
         header = av.AnatomicalHeader.from_sitk(sitk_img)
@@ -323,9 +299,7 @@ class TestAnatomicalHeader(unittest.TestCase):
     def test_is_axis_aligned_with_flips(self):
         """Test axis-aligned matrix with flips (negative values)."""
         # RAS orientation (flips from LPS)
-        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-            "RAS"
-        )
+        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation("RAS")
         direction = np.array(dir_tuple).reshape(3, 3)
 
         header = av.AnatomicalHeader(
@@ -396,9 +370,7 @@ class TestAnatomicalHeader(unittest.TestCase):
         # Compute physical location of last voxel (9, 19, 29)
         last_idx = (9, 19, 29)
         last_voxel_phys = sitk_img.TransformIndexToPhysicalPoint(last_idx)
-        expected_last = np.array(header.origin) + np.array(
-            [9 * 2.0, 19 * 3.0, 29 * 4.0]
-        )
+        expected_last = np.array(header.origin) + np.array([9 * 2.0, 19 * 3.0, 29 * 4.0])
         assert np.allclose(last_voxel_phys, expected_last)
 
     def test_as_sitk_roundtrip(self):
@@ -417,9 +389,7 @@ class TestAnatomicalHeader(unittest.TestCase):
         # Verify all properties match
         assert np.allclose(original_header.origin, recovered_header.origin)
         assert np.allclose(original_header.spacing, recovered_header.spacing)
-        assert np.allclose(
-            original_header.direction, recovered_header.direction
-        )
+        assert np.allclose(original_header.direction, recovered_header.direction)
         assert original_header.size_ijk == recovered_header.size_ijk
 
 
@@ -531,9 +501,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
         # Check types
         self.assertIsInstance(origin, tuple)
         self.assertEqual(len(origin), 3)
-        self.assertTrue(
-            all(isinstance(x, (float, np.floating)) for x in origin)
-        )
+        self.assertTrue(all(isinstance(x, (float, np.floating)) for x in origin))
 
         self.assertIsInstance(corner_idx, np.ndarray)
         self.assertEqual(corner_idx.shape, (3,))
@@ -555,11 +523,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
 
         # target_point is already in LPS (default), so use directly
         # Verify mathematical correctness
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_identity_direction_LPI_corner(self):
         """Test with identity direction matrix and LPI corner (opposite of
@@ -576,11 +540,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
 
         # target_point is already in LPS (default), so use directly
         # Verify mathematical correctness
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_target_frame_defaults_to_LPS(self):
         """Test that target_frame defaults to LPS."""
@@ -631,11 +591,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
         # Target point is in LPS, needs to be converted to LPS for verification
         # LPS to LPS is identity, but we need to check the math works out
         # The target_point [5, 5, 5] in LPS should map correctly
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_use_outer_box_true(self):
         """Test with outer box convention."""
@@ -657,11 +613,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
         self.assertTrue(np.all((corner_idx == -0.5) | (corner_idx == 9.5)))
 
         # Verify correctness
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_use_outer_box_false(self):
         """Test with voxel center convention."""
@@ -683,11 +635,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
         self.assertTrue(np.all((corner_idx == 0.0) | (corner_idx == 9.0)))
 
         # Verify correctness
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_outer_box_difference(self):
         """Test that outer box differs from voxel center by 0.5 * spacing."""
@@ -746,11 +694,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
                 self.assertTrue(0 <= idx_num <= 7)
 
                 # Verify mathematical correctness
-                self.assertTrue(
-                    verify_origin_correctness(
-                        origin, direction, spacing, corner_idx, target_point
-                    )
-                )
+                self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_unusual_target_frame_SRA(self):
         """Test with unusual target frame SRA."""
@@ -783,15 +727,9 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
         # So SRA = [s, r, a] -> LPS = [-r, -a, s] (need proper transform)
         from aind_anatomical_utils import coordinate_systems as cs
 
-        target_lps = cs.convert_coordinate_system(
-            np.array([target_point]), "SRA", "LPS"
-        )[0]
+        target_lps = cs.convert_coordinate_system(np.array([target_point]), "SRA", "LPS")[0]
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_lps
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_lps))
 
     def test_unusual_target_frame_IRP(self):
         """Test with unusual target frame IRP."""
@@ -817,15 +755,9 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
         # Convert target from IRP to LPS for verification
         from aind_anatomical_utils import coordinate_systems as cs
 
-        target_lps = cs.convert_coordinate_system(
-            np.array([target_point]), "IRP", "LPS"
-        )[0]
+        target_lps = cs.convert_coordinate_system(np.array([target_point]), "IRP", "LPS")[0]
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_lps
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_lps))
 
     def test_unusual_target_frame_AIL(self):
         """Test with unusual target frame AIL."""
@@ -850,15 +782,9 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
 
         from aind_anatomical_utils import coordinate_systems as cs
 
-        target_lps = cs.convert_coordinate_system(
-            np.array([target_point]), "AIL", "LPS"
-        )[0]
+        target_lps = cs.convert_coordinate_system(np.array([target_point]), "AIL", "LPS")[0]
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_lps
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_lps))
 
     def test_corner_and_target_frame_both_unusual(self):
         """Test with both corner_code and target_frame unusual."""
@@ -883,15 +809,9 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
 
         from aind_anatomical_utils import coordinate_systems as cs
 
-        target_lps = cs.convert_coordinate_system(
-            np.array([target_point]), "IRP", "LPS"
-        )[0]
+        target_lps = cs.convert_coordinate_system(np.array([target_point]), "IRP", "LPS")[0]
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_lps
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_lps))
 
     def test_same_unusual_frame_for_both(self):
         """Test with same unusual frame for corner_code and target_frame."""
@@ -917,15 +837,9 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
         # When both are the same, no transformation needed
         from aind_anatomical_utils import coordinate_systems as cs
 
-        target_lps = cs.convert_coordinate_system(
-            np.array([target_point]), "SRA", "LPS"
-        )[0]
+        target_lps = cs.convert_coordinate_system(np.array([target_point]), "SRA", "LPS")[0]
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_lps
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_lps))
 
     def test_with_90_degree_rotation_x_axis(self):
         """Test with 90-degree rotation around x-axis."""
@@ -945,11 +859,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_with_90_degree_rotation_y_axis(self):
         """Test with 90-degree rotation around y-axis."""
@@ -969,11 +879,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_with_90_degree_rotation_z_axis(self):
         """Test with 90-degree rotation around z-axis."""
@@ -993,11 +899,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_with_oblique_direction_matrix(self):
         """Test with oblique (non-axis-aligned) direction matrix."""
@@ -1018,11 +920,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_anisotropic_spacing(self):
         """Test with anisotropic spacing."""
@@ -1035,11 +933,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_small_volume(self):
         """Test with small volume size."""
@@ -1052,11 +946,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_large_volume(self):
         """Test with large volume size."""
@@ -1069,11 +959,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_thin_slice_volume(self):
         """Test with thin slice (one dimension is 1)."""
@@ -1086,11 +972,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_very_small_spacing(self):
         """Test with very small spacing."""
@@ -1103,11 +985,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_very_large_spacing(self):
         """Test with very large spacing."""
@@ -1120,11 +998,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_target_point_at_origin(self):
         """Test with target point at origin."""
@@ -1137,11 +1011,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_negative_target_point(self):
         """Test with negative target point coordinates."""
@@ -1154,11 +1024,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_far_from_origin_target_point(self):
         """Test with target point far from origin."""
@@ -1171,11 +1037,7 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
             size, spacing, direction, target_point, corner_code="RAS"
         )
 
-        self.assertTrue(
-            verify_origin_correctness(
-                origin, direction, spacing, corner_idx, target_point
-            )
-        )
+        self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_point))
 
     def test_all_eight_corners_selectable(self):
         """Test that all 8 corners can be selected with appropriate corner
@@ -1229,23 +1091,15 @@ class TestFixCornerComputeOrigin(unittest.TestCase):
                 # Convert to LPS for verification
                 from aind_anatomical_utils import coordinate_systems as cs
 
-                target_lps = cs.convert_coordinate_system(
-                    np.array([target_point]), target_frame, "LPS"
-                )[0]
+                target_lps = cs.convert_coordinate_system(np.array([target_point]), target_frame, "LPS")[0]
 
-                self.assertTrue(
-                    verify_origin_correctness(
-                        origin, direction, spacing, corner_idx, target_lps
-                    )
-                )
+                self.assertTrue(verify_origin_correctness(origin, direction, spacing, corner_idx, target_lps))
 
 
 class TestRegridTo(unittest.TestCase):
     """Tests for AnatomicalHeader.regrid_to() method."""
 
-    def _compute_voxel_physical_location(
-        self, header: av.AnatomicalHeader, index: np.ndarray
-    ) -> np.ndarray:
+    def _compute_voxel_physical_location(self, header: av.AnatomicalHeader, index: np.ndarray) -> np.ndarray:
         """Compute physical location of voxel center using ITK formula."""
         # physical_point = origin + (index * spacing) @ direction.T
         index_arr = np.asarray(index, float)
@@ -1253,27 +1107,19 @@ class TestRegridTo(unittest.TestCase):
         spacing_arr = np.asarray(header.spacing, float)
         return origin_arr + (index_arr * spacing_arr) @ header.direction.T
 
-    def _compute_all_corners_physical(
-        self, header: av.AnatomicalHeader, use_outer_box: bool = False
-    ) -> np.ndarray:
+    def _compute_all_corners_physical(self, header: av.AnatomicalHeader, use_outer_box: bool = False) -> np.ndarray:
         """Compute physical locations of all 8 corners."""
         size_arr = np.asarray(header.size_ijk, float)
         corners_idx = av._corner_indices(size_arr, outer=use_outer_box)
         # Transform to physical coordinates
         origin_arr = np.asarray(header.origin, float)
         spacing_arr = np.asarray(header.spacing, float)
-        corners_physical = (
-            origin_arr + (corners_idx * spacing_arr) @ header.direction.T
-        )
+        corners_physical = origin_arr + (corners_idx * spacing_arr) @ header.direction.T
         return corners_physical
 
-    def _compute_bounding_box(
-        self, header: av.AnatomicalHeader
-    ) -> tuple[np.ndarray, np.ndarray]:
+    def _compute_bounding_box(self, header: av.AnatomicalHeader) -> tuple[np.ndarray, np.ndarray]:
         """Compute min/max extents of bounding box."""
-        corners = self._compute_all_corners_physical(
-            header, use_outer_box=False
-        )
+        corners = self._compute_all_corners_physical(header, use_outer_box=False)
         return corners.min(axis=0), corners.max(axis=0)
 
     def _create_test_header(
@@ -1284,9 +1130,7 @@ class TestRegridTo(unittest.TestCase):
         origin: tuple[float, float, float] = (10.0, 20.0, 30.0),
     ) -> av.AnatomicalHeader:
         """Create a test header with specified coordinate system."""
-        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-            coord_system
-        )
+        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(coord_system)
         direction = np.array(dir_tuple).reshape(3, 3)
 
         return av.AnatomicalHeader(
@@ -1343,26 +1187,16 @@ class TestRegridTo(unittest.TestCase):
         bb1_min, bb1_max = self._compute_bounding_box(header1)
         bb2_min, bb2_max = self._compute_bounding_box(header2)
 
-        if not (
-            np.allclose(bb1_min, bb2_min) and np.allclose(bb1_max, bb2_max)
-        ):
+        if not (np.allclose(bb1_min, bb2_min) and np.allclose(bb1_max, bb2_max)):
             return False
 
         # Verify corners match
-        corners1 = self._compute_all_corners_physical(
-            header1, use_outer_box=False
-        )
-        corners2 = self._compute_all_corners_physical(
-            header2, use_outer_box=False
-        )
+        corners1 = self._compute_all_corners_physical(header1, use_outer_box=False)
+        corners2 = self._compute_all_corners_physical(header2, use_outer_box=False)
 
         # Corners may be in different order, so sort them
-        corners1_sorted = np.sort(corners1.view(np.void), axis=0).view(
-            np.float64
-        )
-        corners2_sorted = np.sort(corners2.view(np.void), axis=0).view(
-            np.float64
-        )
+        corners1_sorted = np.sort(corners1.view(np.void), axis=0).view(np.float64)
+        corners2_sorted = np.sort(corners2.view(np.void), axis=0).view(np.float64)
 
         return np.allclose(corners1_sorted, corners2_sorted)
 
@@ -1372,14 +1206,10 @@ class TestRegridTo(unittest.TestCase):
         dst_header = src_header.regrid_to("LPS")
 
         # Verify same physical space
-        self.assertTrue(
-            self._verify_headers_same_physical_space(src_header, dst_header)
-        )
+        self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
         # Verify direction changed
-        self.assertFalse(
-            np.allclose(src_header.direction, dst_header.direction)
-        )
+        self.assertFalse(np.allclose(src_header.direction, dst_header.direction))
 
         # Sample some voxels and verify they're at same locations
         test_indices = [
@@ -1390,21 +1220,16 @@ class TestRegridTo(unittest.TestCase):
 
         for idx in test_indices:
             idx_arr = np.array(idx)
-            src_phys = self._compute_voxel_physical_location(
-                src_header, idx_arr
-            )
+            src_phys = self._compute_voxel_physical_location(src_header, idx_arr)
 
             # Map index from RAS to LPS
             src_size = np.asarray(src_header.size_ijk, int)
             dst_idx = self._map_index(idx_arr, src_size, "RAS", "LPS")
 
-            dst_phys = self._compute_voxel_physical_location(
-                dst_header, dst_idx
-            )
+            dst_phys = self._compute_voxel_physical_location(dst_header, dst_idx)
             self.assertTrue(
                 np.allclose(src_phys, dst_phys),
-                f"Voxel at {idx} in RAS (phys {src_phys}) doesn't match "
-                f"{dst_idx} in LPS (phys {dst_phys})",
+                f"Voxel at {idx} in RAS (phys {src_phys}) doesn't match {dst_idx} in LPS (phys {dst_phys})",
             )
 
     def test_regrid_LPS_to_RAS(self):
@@ -1412,9 +1237,7 @@ class TestRegridTo(unittest.TestCase):
         src_header = self._create_test_header("LPS")
         dst_header = src_header.regrid_to("RAS")
 
-        self.assertTrue(
-            self._verify_headers_same_physical_space(src_header, dst_header)
-        )
+        self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
     def test_regrid_multiple_coordinate_systems(self):
         """Test regridding between multiple coordinate systems."""
@@ -1436,9 +1259,7 @@ class TestRegridTo(unittest.TestCase):
                     dst_header = src_header.regrid_to(dst_sys)
 
                     self.assertTrue(
-                        self._verify_headers_same_physical_space(
-                            src_header, dst_header
-                        ),
+                        self._verify_headers_same_physical_space(src_header, dst_header),
                         f"Failed for {src_sys} -> {dst_sys}",
                     )
 
@@ -1480,16 +1301,12 @@ class TestRegridTo(unittest.TestCase):
             for j in range(4):
                 for k in range(5):
                     src_idx = np.array([i, j, k])
-                    src_phys = self._compute_voxel_physical_location(
-                        src_header, src_idx
-                    )
+                    src_phys = self._compute_voxel_physical_location(src_header, src_idx)
 
                     # Map index from RAS to LPS
                     src_size = np.asarray(src_header.size_ijk, int)
                     dst_idx = self._map_index(src_idx, src_size, "RAS", "LPS")
-                    dst_phys = self._compute_voxel_physical_location(
-                        dst_header, dst_idx
-                    )
+                    dst_phys = self._compute_voxel_physical_location(dst_header, dst_idx)
 
                     self.assertTrue(
                         np.allclose(src_phys, dst_phys, atol=1e-10),
@@ -1511,15 +1328,11 @@ class TestRegridTo(unittest.TestCase):
                     np.random.randint(0, 50),
                 ]
             )
-            src_phys = self._compute_voxel_physical_location(
-                src_header, src_idx
-            )
+            src_phys = self._compute_voxel_physical_location(src_header, src_idx)
 
             src_size = np.asarray(src_header.size_ijk, int)
             dst_idx = self._map_index(src_idx, src_size, "RAS", "LPI")
-            dst_phys = self._compute_voxel_physical_location(
-                dst_header, dst_idx
-            )
+            dst_phys = self._compute_voxel_physical_location(dst_header, dst_idx)
 
             self.assertTrue(np.allclose(src_phys, dst_phys, atol=1e-10))
 
@@ -1528,24 +1341,12 @@ class TestRegridTo(unittest.TestCase):
         src_header = self._create_test_header("RAS")
         dst_header = src_header.regrid_to("LPS")
 
-        src_corners = self._compute_all_corners_physical(
-            src_header, use_outer_box=False
-        )
-        dst_corners = self._compute_all_corners_physical(
-            dst_header, use_outer_box=False
-        )
+        src_corners = self._compute_all_corners_physical(src_header, use_outer_box=False)
+        dst_corners = self._compute_all_corners_physical(dst_header, use_outer_box=False)
 
         # Sort corners for comparison (order may differ)
-        src_sorted = (
-            np.sort(src_corners.view(np.void), axis=0)
-            .view(np.float64)
-            .reshape(-1, 3)
-        )
-        dst_sorted = (
-            np.sort(dst_corners.view(np.void), axis=0)
-            .view(np.float64)
-            .reshape(-1, 3)
-        )
+        src_sorted = np.sort(src_corners.view(np.void), axis=0).view(np.float64).reshape(-1, 3)
+        dst_sorted = np.sort(dst_corners.view(np.void), axis=0).view(np.float64).reshape(-1, 3)
 
         self.assertTrue(np.allclose(src_sorted, dst_sorted, atol=1e-10))
 
@@ -1579,18 +1380,14 @@ class TestRegridTo(unittest.TestCase):
         src_header = self._create_test_header("RAS", spacing=(0.5, 1.0, 2.0))
         dst_header = src_header.regrid_to("LPS")
 
-        self.assertTrue(
-            self._verify_headers_same_physical_space(src_header, dst_header)
-        )
+        self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
     def test_regrid_non_cubic_volume(self):
         """Test regridding with non-cubic volume."""
         src_header = self._create_test_header("RAS", size=(128, 256, 64))
         dst_header = src_header.regrid_to("LPS")
 
-        self.assertTrue(
-            self._verify_headers_same_physical_space(src_header, dst_header)
-        )
+        self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
     def test_regrid_arbitrary_origins(self):
         """Test regridding with various origin locations."""
@@ -1605,11 +1402,7 @@ class TestRegridTo(unittest.TestCase):
                 src_header = self._create_test_header("RAS", origin=origin)
                 dst_header = src_header.regrid_to("LPS")
 
-                self.assertTrue(
-                    self._verify_headers_same_physical_space(
-                        src_header, dst_header
-                    )
-                )
+                self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
     def test_regrid_identity_transformation(self):
         """Test regridding to the same coordinate system."""
@@ -1618,42 +1411,30 @@ class TestRegridTo(unittest.TestCase):
 
         # Should be identical
         self.assertTrue(np.allclose(src_header.origin, dst_header.origin))
-        self.assertTrue(
-            np.allclose(src_header.direction, dst_header.direction)
-        )
+        self.assertTrue(np.allclose(src_header.direction, dst_header.direction))
         self.assertTrue(np.allclose(src_header.spacing, dst_header.spacing))
-        self.assertTrue(
-            np.array_equal(src_header.size_ijk, dst_header.size_ijk)
-        )
+        self.assertTrue(np.array_equal(src_header.size_ijk, dst_header.size_ijk))
 
     def test_regrid_small_volume(self):
         """Test regridding a 2x2x2 volume."""
         src_header = self._create_test_header("RAS", size=(2, 2, 2))
         dst_header = src_header.regrid_to("LPS")
 
-        self.assertTrue(
-            self._verify_headers_same_physical_space(src_header, dst_header)
-        )
+        self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
     def test_regrid_thin_slice(self):
         """Test regridding a thin slice volume."""
         src_header = self._create_test_header("RAS", size=(256, 256, 1))
         dst_header = src_header.regrid_to("LPS")
 
-        self.assertTrue(
-            self._verify_headers_same_physical_space(src_header, dst_header)
-        )
+        self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
     def test_regrid_very_small_spacing(self):
         """Test regridding with very small spacing."""
-        src_header = self._create_test_header(
-            "RAS", spacing=(0.01, 0.01, 0.01)
-        )
+        src_header = self._create_test_header("RAS", spacing=(0.01, 0.01, 0.01))
         dst_header = src_header.regrid_to("LPS")
 
-        self.assertTrue(
-            self._verify_headers_same_physical_space(src_header, dst_header)
-        )
+        self.assertTrue(self._verify_headers_same_physical_space(src_header, dst_header))
 
     def test_regrid_large_volume(self):
         """Test regridding a large volume."""
@@ -1753,9 +1534,7 @@ class TestAntsIntegration(unittest.TestCase):
         self.assertTrue(np.allclose(ants_img.origin, header.origin))
         # Spacing should match header spacing
         self.assertTrue(np.allclose(ants_img.spacing, header.spacing))
-        self.assertTrue(
-            np.allclose(ants_img.direction, header.direction.reshape(3, 3))
-        )
+        self.assertTrue(np.allclose(ants_img.direction, header.direction.reshape(3, 3)))
         self.assertEqual(ants_img.shape, header.size_ijk)
 
     def test_as_ants_various_dtypes(self):
@@ -1780,9 +1559,7 @@ class TestAntsIntegration(unittest.TestCase):
                 # Verify image was created with correct shape
                 self.assertEqual(ants_img.shape, (5, 5, 5))
                 # Verify it's a numeric dtype (ANTsPy may convert types)
-                self.assertTrue(
-                    np.issubdtype(ants_img.numpy().dtype, np.number)
-                )
+                self.assertTrue(np.issubdtype(ants_img.numpy().dtype, np.number))
 
     def test_as_ants_physical_extent(self):
         """Test that as_ants creates image with correct physical extent."""
@@ -1798,9 +1575,7 @@ class TestAntsIntegration(unittest.TestCase):
         # Compute physical location of first voxel using ANTs
         first_idx = np.array([0, 0, 0])
         # ANTs formula: physical = origin + direction @ (spacing * index)
-        first_phys = np.array(ants_img.origin) + ants_img.direction @ (
-            np.array(ants_img.spacing) * first_idx
-        )
+        first_phys = np.array(ants_img.origin) + ants_img.direction @ (np.array(ants_img.spacing) * first_idx)
         self.assertTrue(np.allclose(first_phys, header.origin))
 
     def test_update_ants(self):
@@ -1831,9 +1606,7 @@ class TestAntsIntegration(unittest.TestCase):
         self.assertTrue(np.allclose(initial_img.origin, header.origin))
         # Spacing should match header spacing
         self.assertTrue(np.allclose(initial_img.spacing, header.spacing))
-        self.assertTrue(
-            np.allclose(initial_img.direction, header.direction.reshape(3, 3))
-        )
+        self.assertTrue(np.allclose(initial_img.direction, header.direction.reshape(3, 3)))
 
     def test_update_ants_preserves_spacing(self):
         """Test that update_ants correctly sets spacing from header."""
@@ -1903,12 +1676,8 @@ class TestAntsIntegration(unittest.TestCase):
 
         # Verify all properties match
         self.assertTrue(np.allclose(original_img.origin, recovered_img.origin))
-        self.assertTrue(
-            np.allclose(original_img.spacing, recovered_img.spacing)
-        )
-        self.assertTrue(
-            np.allclose(original_img.direction, recovered_img.direction)
-        )
+        self.assertTrue(np.allclose(original_img.spacing, recovered_img.spacing))
+        self.assertTrue(np.allclose(original_img.direction, recovered_img.direction))
         self.assertEqual(original_img.shape, recovered_img.shape)
 
 
@@ -1938,9 +1707,7 @@ class TestCrossLibraryRoundTrips(unittest.TestCase):
         sitk_last = sitk_img.TransformIndexToPhysicalPoint((9, 19, 29))
         # ANTs: physical = origin + direction @ (spacing * index)
         last_idx_ants = np.array([9, 19, 29])
-        ants_last = np.array(ants_img.origin) + ants_img.direction @ (
-            np.array(ants_img.spacing) * last_idx_ants
-        )
+        ants_last = np.array(ants_img.origin) + ants_img.direction @ (np.array(ants_img.spacing) * last_idx_ants)
 
         self.assertTrue(np.allclose(sitk_last, ants_last))
 
@@ -1963,12 +1730,8 @@ class TestCrossLibraryRoundTrips(unittest.TestCase):
 
         # Verify physical location of center voxel
         center_idx = np.array([5, 10, 15])
-        ants_center = np.array(ants_img.origin) + ants_img.direction @ (
-            np.array(ants_img.spacing) * center_idx
-        )
-        sitk_center = sitk_img.TransformIndexToPhysicalPoint(
-            tuple(center_idx.tolist())
-        )
+        ants_center = np.array(ants_img.origin) + ants_img.direction @ (np.array(ants_img.spacing) * center_idx)
+        sitk_center = sitk_img.TransformIndexToPhysicalPoint(tuple(center_idx.tolist()))
 
         self.assertTrue(np.allclose(ants_center, sitk_center))
 
@@ -1992,23 +1755,15 @@ class TestCrossLibraryRoundTrips(unittest.TestCase):
 
         # Verify both recovered headers match original
         for recovered in [header_from_sitk, header_from_ants]:
-            self.assertTrue(
-                np.allclose(original_header.origin, recovered.origin)
-            )
-            self.assertTrue(
-                np.allclose(original_header.spacing, recovered.spacing)
-            )
-            self.assertTrue(
-                np.allclose(original_header.direction, recovered.direction)
-            )
+            self.assertTrue(np.allclose(original_header.origin, recovered.origin))
+            self.assertTrue(np.allclose(original_header.spacing, recovered.spacing))
+            self.assertTrue(np.allclose(original_header.direction, recovered.direction))
             self.assertEqual(original_header.size_ijk, recovered.size_ijk)
 
     def test_roundtrip_with_different_orientation(self):
         """Test round-trip with RAS orientation."""
         # Get RAS direction matrix
-        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation(
-            "RAS"
-        )
+        dir_tuple = DICOMOrientImageFilter.GetDirectionCosinesFromOrientation("RAS")
         direction = np.array(dir_tuple).reshape(3, 3)
 
         original_header = av.AnatomicalHeader(
@@ -2027,9 +1782,7 @@ class TestCrossLibraryRoundTrips(unittest.TestCase):
 
         # Both should match original
         for recovered in [header_from_sitk, header_from_ants]:
-            self.assertTrue(
-                np.allclose(original_header.direction, recovered.direction)
-            )
+            self.assertTrue(np.allclose(original_header.direction, recovered.direction))
 
     def test_voxel_centers_match_across_libraries(self):
         """Test that voxel centers map to same physical locations."""
@@ -2053,9 +1806,7 @@ class TestCrossLibraryRoundTrips(unittest.TestCase):
 
                 # Get physical location from ANTs
                 idx_arr = np.array(idx)
-                ants_phys = np.array(ants_img.origin) + ants_img.direction @ (
-                    np.array(ants_img.spacing) * idx_arr
-                )
+                ants_phys = np.array(ants_img.origin) + ants_img.direction @ (np.array(ants_img.spacing) * idx_arr)
 
                 self.assertTrue(
                     np.allclose(sitk_phys, ants_phys),

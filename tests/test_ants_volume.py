@@ -29,13 +29,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
 
         # Verify voxel values at physical locations
         # Test corner voxel [0,0,0] in RAS
-        src_phys = np.array(img.origin) + img.direction @ (
-            np.array(img.spacing) * np.array([0, 0, 0])
-        )
+        src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array([0, 0, 0]))
         src_val = img.numpy()[0, 0, 0]
-        result_val = get_ants_voxel_value_at_physical_point(
-            result, tuple(src_phys)
-        )
+        result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
         self.assertEqual(src_val, result_val)
 
     def test_regrid_LPS_to_RAS(self):
@@ -48,13 +44,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
         self.assertEqual(result_code, "RAS")
 
         # Verify values preserved at physical locations
-        src_phys = np.array(img.origin) + img.direction @ (
-            np.array(img.spacing) * np.array([2, 3, 4])
-        )
+        src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array([2, 3, 4]))
         src_val = img.numpy()[2, 3, 4]
-        result_val = get_ants_voxel_value_at_physical_point(
-            result, tuple(src_phys)
-        )
+        result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
         self.assertEqual(src_val, result_val)
 
     def test_regrid_to_multiple_orientations(self):
@@ -64,9 +56,7 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
 
         for dst_orient in orientations:
             with self.subTest(dst_orient=dst_orient):
-                result = ants_volume.regrid_axis_aligned_ants(
-                    src_img, dst_orient
-                )
+                result = ants_volume.regrid_axis_aligned_ants(src_img, dst_orient)
 
                 # Verify correct orientation
                 result_code = get_ants_orientation_code(result)
@@ -77,9 +67,7 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
                     np.array(src_img.spacing) * np.array([1, 1, 1])
                 )
                 src_val = src_img.numpy()[1, 1, 1]
-                result_val = get_ants_voxel_value_at_physical_point(
-                    result, tuple(src_phys)
-                )
+                result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
                 self.assertEqual(src_val, result_val)
 
     def test_regrid_identity_transformation(self):
@@ -105,12 +93,8 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
         # Should return to original state
         self.assertEqual(original.shape, final.shape)
         self.assertTrue(np.allclose(original.origin, final.origin, atol=1e-10))
-        self.assertTrue(
-            np.allclose(original.spacing, final.spacing, atol=1e-10)
-        )
-        self.assertTrue(
-            np.allclose(original.direction, final.direction, atol=1e-10)
-        )
+        self.assertTrue(np.allclose(original.spacing, final.spacing, atol=1e-10))
+        self.assertTrue(np.allclose(original.direction, final.direction, atol=1e-10))
 
         # All voxel values should match
         self.assertTrue(np.array_equal(original.numpy(), final.numpy()))
@@ -134,13 +118,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
         ]
 
         for corner in corners:
-            src_phys = np.array(img.origin) + img.direction @ (
-                np.array(img.spacing) * np.array(corner)
-            )
+            src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array(corner))
             src_val = img.numpy()[corner[0], corner[1], corner[2]]
-            result_val = get_ants_voxel_value_at_physical_point(
-                result, tuple(src_phys)
-            )
+            result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
             self.assertEqual(
                 src_val,
                 result_val,
@@ -154,13 +134,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
 
         # Test center voxel
         center_idx = (5, 10, 15)
-        src_phys = np.array(img.origin) + img.direction @ (
-            np.array(img.spacing) * np.array(center_idx)
-        )
+        src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array(center_idx))
         src_val = img.numpy()[center_idx[0], center_idx[1], center_idx[2]]
-        result_val = get_ants_voxel_value_at_physical_point(
-            result, tuple(src_phys)
-        )
+        result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
         self.assertEqual(src_val, result_val)
 
     def test_sampled_voxels_preserved(self):
@@ -177,13 +153,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
                 np.random.randint(0, 15),
                 np.random.randint(0, 20),
             )
-            src_phys = np.array(img.origin) + img.direction @ (
-                np.array(img.spacing) * np.array(idx)
-            )
+            src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array(idx))
             src_val = img.numpy()[idx[0], idx[1], idx[2]]
-            result_val = get_ants_voxel_value_at_physical_point(
-                result, tuple(src_phys)
-            )
+            result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
             self.assertEqual(src_val, result_val)
 
     def test_regrid_with_uint8(self):
@@ -210,9 +182,7 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
 
     def test_regrid_with_anisotropic_spacing(self):
         """Test regridding with anisotropic spacing."""
-        img = create_gradient_ants_image(
-            "RAS", size=(5, 6, 7), spacing=(0.5, 1.0, 2.0)
-        )
+        img = create_gradient_ants_image("RAS", size=(5, 6, 7), spacing=(0.5, 1.0, 2.0))
         result = ants_volume.regrid_axis_aligned_ants(img, "LPS")
 
         # Verify orientation changed
@@ -220,20 +190,14 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
         self.assertEqual(result_code, "LPS")
 
         # Verify corner preserved
-        src_phys = np.array(img.origin) + img.direction @ (
-            np.array(img.spacing) * np.array([0, 0, 0])
-        )
+        src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array([0, 0, 0]))
         src_val = img.numpy()[0, 0, 0]
-        result_val = get_ants_voxel_value_at_physical_point(
-            result, tuple(src_phys)
-        )
+        result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
         self.assertEqual(src_val, result_val)
 
     def test_regrid_with_non_zero_origin(self):
         """Test regridding with non-zero origin."""
-        img = create_gradient_ants_image(
-            "RAS", size=(5, 6, 7), origin=(100.0, -50.0, 25.0)
-        )
+        img = create_gradient_ants_image("RAS", size=(5, 6, 7), origin=(100.0, -50.0, 25.0))
         result = ants_volume.regrid_axis_aligned_ants(img, "LPS")
 
         # Verify orientation changed
@@ -242,13 +206,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
 
         # Verify center voxel preserved
         center_idx = (2, 3, 3)
-        src_phys = np.array(img.origin) + img.direction @ (
-            np.array(img.spacing) * np.array(center_idx)
-        )
+        src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array(center_idx))
         src_val = img.numpy()[center_idx[0], center_idx[1], center_idx[2]]
-        result_val = get_ants_voxel_value_at_physical_point(
-            result, tuple(src_phys)
-        )
+        result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
         self.assertEqual(src_val, result_val)
 
     def test_regrid_small_volume(self):
@@ -264,13 +224,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
         for i in range(2):
             for j in range(2):
                 for k in range(2):
-                    src_phys = np.array(img.origin) + img.direction @ (
-                        np.array(img.spacing) * np.array([i, j, k])
-                    )
+                    src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array([i, j, k]))
                     src_val = img.numpy()[i, j, k]
-                    result_val = get_ants_voxel_value_at_physical_point(
-                        result, tuple(src_phys)
-                    )
+                    result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
                     self.assertEqual(src_val, result_val)
 
     def test_regrid_thin_slice(self):
@@ -284,9 +240,7 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
         # Verify corner preserved
         src_phys = np.array(img.origin)
         src_val = img.numpy()[0, 0, 0]
-        result_val = get_ants_voxel_value_at_physical_point(
-            result, tuple(src_phys)
-        )
+        result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
         self.assertEqual(src_val, result_val)
 
     def test_regrid_non_axis_aligned_raises_error(self):
@@ -301,9 +255,7 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
                 [0.0, 0.0, 1.0],
             ]
         )
-        img = ants.from_numpy(
-            arr, origin=(0, 0, 0), spacing=(1, 1, 1), direction=direction
-        )
+        img = ants.from_numpy(arr, origin=(0, 0, 0), spacing=(1, 1, 1), direction=direction)
 
         with self.assertRaises(ValueError) as ctx:
             ants_volume.regrid_axis_aligned_ants(img, "LPS")
@@ -325,13 +277,9 @@ class TestRegridAxisAlignedAnts(unittest.TestCase):
             for j in range(6):
                 for k in range(7):
                     if arr[i, j, k] > 0:
-                        src_phys = np.array(img.origin) + img.direction @ (
-                            np.array(img.spacing) * np.array([i, j, k])
-                        )
+                        src_phys = np.array(img.origin) + img.direction @ (np.array(img.spacing) * np.array([i, j, k]))
                         src_val = arr[i, j, k]
-                        result_val = get_ants_voxel_value_at_physical_point(
-                            result, tuple(src_phys)
-                        )
+                        result_val = get_ants_voxel_value_at_physical_point(result, tuple(src_phys))
                         self.assertEqual(src_val, result_val)
 
 

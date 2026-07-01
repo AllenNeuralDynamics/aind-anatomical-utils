@@ -51,18 +51,12 @@ class SlicerFilesTest(unittest.TestCase):
         """
         Tests that the `extract_control_points` function works as intended.
         """
-        received_pos, received_names, coord_sys = sf.extract_control_points(
-            self.slicer_json_control_points_mock
-        )
+        received_pos, received_names, coord_sys = sf.extract_control_points(self.slicer_json_control_points_mock)
         self.assertTrue(np.array_equal(received_pos, self.expected_pos))
         self.assertEqual(received_names, self.expected_names)
         self.assertEqual(coord_sys, "LPS")
-        received_segment_info = sf.find_seg_nrrd_header_segment_info(
-            self.nrrd_odict_mock
-        )
-        self.assertTrue(
-            len(self.nrrd_odict_ground_truth) == len(received_segment_info)
-        )
+        received_segment_info = sf.find_seg_nrrd_header_segment_info(self.nrrd_odict_mock)
+        self.assertTrue(len(self.nrrd_odict_ground_truth) == len(received_segment_info))
         for k, v in self.nrrd_odict_ground_truth.items():
             self.assertTrue(k in received_segment_info)
             self.assertTrue(received_segment_info[k] == v)
@@ -91,9 +85,7 @@ class SlicerFilesTest(unittest.TestCase):
             sf.create_slicer_fcsv("test.fcsv", pts_dict)
         # Mock the open function to provide the captured content to
         # read_slicer_fcsv
-        with patch(
-            "builtins.open", mock_open(read_data=file_content)
-        ) as mock_file:
+        with patch("builtins.open", mock_open(read_data=file_content)) as mock_file:
             read_pts_dict = sf.read_slicer_fcsv("test.fcsv")
 
         self.assertTrue(np.all(pts_dict["0"] == read_pts_dict["0"]))
@@ -109,9 +101,7 @@ class SlicerFilesTest(unittest.TestCase):
             sf.read_slicer_fcsv("test.fcsv", direction="XYZ")
 
         # Assert that the function corrects mismatched directions
-        with patch(
-            "builtins.open", mock_open(read_data=file_content)
-        ) as mock_file:
+        with patch("builtins.open", mock_open(read_data=file_content)) as mock_file:
             fixed_pt_dict = sf.read_slicer_fcsv("test.fcsv", direction="RAS")
             self.assertTrue(pts_dict["0"][0] == -fixed_pt_dict["0"][0])
 
