@@ -1,3 +1,9 @@
+## v0.4.3 (2026-06-30)
+
+### Fix
+
+- update antspyx dependency to avoid ancient scipy versions
+
 ## v0.4.2 (2025-10-22)
 
 ### Fix

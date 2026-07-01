@@ -14,7 +14,7 @@ authors = [
 ]
 classifiers = ["Programming Language :: Python :: 3"]
 readme = "README.md"
-version = "0.4.2"
+version = "0.4.3"
 
 dependencies = ["numpy>=1.7", "SimpleITK>=2", "antspyx>=0.6.2"]
 
